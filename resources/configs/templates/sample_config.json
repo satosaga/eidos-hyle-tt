@@ -1,0 +1,57 @@
+{
+    "PhysicalSettings": {
+        "rider_weight": 70.0,
+        "cda": 0.35,
+        "f_max": 400.0,
+        "brake_lookahead": 1.2,
+        "brake_usability": 0.7,
+        "bike_weight": 8.0,
+        "gravity_accel": 9.80665,
+        "air_density": 1.225,
+        "crr": 0.004,
+        "mu": 0.6,
+        "wind_speed": 4.0,
+        "wind_direction": 270.0,
+        "cda_yaw_table_filename": "constant_model.csv",
+        "min_corner_radius": 3.0
+    },
+    "PhysiologicalSettings": {
+        "cp": 250.0,
+        "w_prime": 20000.0,
+        "p_max": 1000.0,
+        "w_prime_recovery_rate": 1.28,
+        "vitality_loss_rate": 0.0
+    },
+    "RunSettings": {
+        "gpx_filename": "sample_course.gpx",
+        "n_seg_min": 1,
+        "n_seg_max": 4,
+        "initial_base_seed": 42,
+        "seed_factor": 3,
+        "time_step": 0.1,
+        "seg_power_max": 1000.0,
+        "seg_power_min": 0.0,
+        "seg_length_min": 50.0,
+        "distance_step": 1.0
+    },
+    "Engine": {
+        "simulator": "sim_kiritsubo",
+        "optimizer": "opt_tenchi",
+        "optimizer_params": {
+            "sub_seed_count": 20,
+            "de_strategy": "randtobest1bin",
+            "de_mutation_min": 0.1,
+            "de_mutation_max": 1.9,
+            "de_recombination": 0.9,
+            "de_popsize": 5,
+            "de_maxiter": 300,
+            "de_tol": 0.001,
+            "refine_xatol_w": 1.0,
+            "refine_fatol_s": 0.01,
+            "refine_restart_eps_s": 1e-05,
+            "refine_max_restarts": 100,
+            "initl_time_step_scale": 10.0,
+            "time_step_refine_stages": 3
+        }
+    }
+}

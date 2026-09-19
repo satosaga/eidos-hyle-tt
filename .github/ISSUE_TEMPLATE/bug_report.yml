@@ -1,0 +1,55 @@
+name: Bug report
+description: Something doesn't work the way it should.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this. If the bug is in a
+        generated strategy's numbers or behavior, the config/GPX pair
+        and the app's own reproducibility info below make the biggest
+        difference in how quickly this can be tracked down — see
+        `docs/RUNBOOK.md` if you're not sure where to find any of it.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: >-
+        Which app (`eidos-manager`, `eidos-generator`, ...), and what did
+        you do in it? If a specific config/GPX pair triggers this,
+        attaching them (or `resources/configs/templates/sample_config.json`
+        + `resources/gpx/sample_course.gpx` with the specific fields you
+        changed) is the single most useful thing you can include.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: >-
+        OS and version, Python version (`python3.12 --version`), and if
+        this involves a generated strategy JSON, the `input.git_state`
+        block from that JSON (`commit_hash` + `is_dirty`) is more precise
+        than restating your OS/Python version alone.
+      placeholder: |
+        OS:
+        Python version:
+        git commit (if relevant):
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log/console output
+      description: Paste any error output or traceback. This will be rendered as-is, no need for a code block.
+      render: shell
+    validations:
+      required: false

@@ -1,0 +1,98 @@
+# --- OS ---
+.DS_Store
+
+# --- Secrets (none checked in yet, but never track if one shows up) ---
+.env
+.env.*
+
+# --- Python ---
+__pycache__/
+*.pyc
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# --- Virtual environments ---
+env312_arm64/
+env312_linux/
+myenv_py312/
+venv/
+.venv/
+
+# --- Packaging build artifacts (pyproject.toml / pip install -e .) ---
+*.egg-info/
+build/
+dist/
+
+# --- Sphinx docs: api/ stubs and HTML output are regenerated on demand ---
+# --- (sphinx-apidoc + sphinx-build, see docs/RUNBOOK.md), not committed ---
+/docs/sphinx/source/api/
+/docs/sphinx/_build/
+
+# --- Per-installation data (see resources/ note below): GC_activities is ---
+# --- each user's own external GoldenCheetah history (symlink, or point ---
+# --- EIDOS_TT_GC_ACTIVITIES_DIR at it instead); strategies is this tool's ---
+# --- own generated output, kept local by default but excluded here since ---
+# --- EIDOS_TT_STRATEGIES_DIR (and, for all of resources/ at once, ---
+# --- EIDOS_TT_RESOURCES_DIR) can redirect it to synced/external storage ---
+/resources/GC_activities
+/resources/strategies
+
+# --- Personal ride data, except one bundled sample (a real, trimmed and ---
+# --- anonymized race recording) -- generated outputs stay fully local ---
+/resources/activities/*
+!/resources/activities/sample_activity.fit
+/resources/exports/
+
+# --- GPX courses: personal, except one bundled sample (a real, usable ---
+# --- course, not a template -- GPX geometry isn't copy-and-edit like ---
+# --- config/filter JSON is) --------------------------------------------
+/resources/gpx/*.gpx
+!/resources/gpx/sample_course.gpx
+
+# --- Generated config/filter instances (keep one canonical template ---
+# --- per directory; anything else placed under templates/ stays local) --
+/resources/configs/*.json
+/resources/configs/templates/*.json
+!/resources/configs/templates/sample_config.json
+/resources/filters/*.json
+/resources/filters/templates/*.json
+!/resources/filters/templates/default_filter.json
+
+# --- Manual snapshot backups (superseded by git history) ---
+backup20260*/
+
+# --- Regenerable diagnostic/debug output ---
+altitude_lag_diag.png
+direct_slope_check.png
+distance_channel_diag.png
+linear_interpolation_comparison.png
+preprocessing_effect_verification.png
+course_profile_dump.json
+rebuild_trace_dump.json
+
+# --- App's own non-domain bookkeeping (GUI window state, perf caches; ---
+# --- see core.io_config's BASE_TEMP_DIR comment) ------------------------
+/temp/
+
+# --- Machine-specific / stray files ---
+Acc:
+
+# --- Ad-hoc / standalone debug scripts (not part of the managed codebase) ---
+color.py
+synth_resample_artifact_check.py
+verify_calibrator.py
+test.py
+
+# --- Editor / local tool state (machine-specific, not shared) ---
+.claude/
+.tmp_share/
+.vscode/
+
+# --- Git worktrees (created by refactor branches) ---
+.worktrees/
+
+# --- Local scratch planning notes, not meant for the repo ---
+/_private/

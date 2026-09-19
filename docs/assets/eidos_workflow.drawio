@@ -1,0 +1,163 @@
+<mxfile host="app.diagrams.net" agent="claude-code">
+  <diagram name="Apps x resources (data flow only)" id="apps-resources-flow">
+    <mxGraphModel dx="1528" dy="1057" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1000" pageHeight="960" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="phase-generate" parent="1" style="shape=mxgraph.basic.partConcEllipse;startAngle=0;endAngle=0.16667;arcWidth=0.56;fillColor=#f8cecc;strokeColor=none;html=1;" vertex="1">
+          <mxGeometry height="900" width="900" x="50" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="phase-view" parent="1" style="shape=mxgraph.basic.partConcEllipse;startAngle=0.16667;endAngle=0.33333;arcWidth=0.56;fillColor=#ffe6cc;strokeColor=none;html=1;" vertex="1">
+          <mxGeometry height="900" width="900" x="50" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="phase-design" parent="1" style="shape=mxgraph.basic.partConcEllipse;startAngle=0.33333;endAngle=0.5;arcWidth=0.56;fillColor=#fff2cc;strokeColor=none;html=1;" vertex="1">
+          <mxGeometry height="900" width="900" x="50" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="phase-export" parent="1" style="shape=mxgraph.basic.partConcEllipse;startAngle=0.5;endAngle=0.66667;arcWidth=0.56;fillColor=#d5e8d4;strokeColor=none;html=1;" vertex="1">
+          <mxGeometry height="900" width="900" x="50" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="phase-practice" parent="1" style="shape=mxgraph.basic.partConcEllipse;startAngle=0.66667;endAngle=0.83333;arcWidth=0.56;fillColor=#dae8fc;strokeColor=none;html=1;" vertex="1">
+          <mxGeometry height="900" width="900" x="50" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="phase-verify" parent="1" style="shape=mxgraph.basic.partConcEllipse;startAngle=0.83333;endAngle=1;arcWidth=0.56;fillColor=#e1d5e7;strokeColor=none;html=1;" vertex="1">
+          <mxGeometry height="900" width="900" x="50" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="hole-bg" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e6e6e6;strokeColor=none;" vertex="1">
+          <mxGeometry height="410" width="410" x="295" y="275" as="geometry" />
+        </mxCell>
+        <mxCell id="phase-label-generate" parent="1" style="text;html=1;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;rotation=30;" value="1. Generate" vertex="1">
+          <mxGeometry height="22" width="130" x="522.5" y="317.5" as="geometry" />
+        </mxCell>
+        <mxCell id="phase-label-view" parent="1" style="text;html=1;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;rotation=90;" value="2. View" vertex="1">
+          <mxGeometry height="22" width="130" x="610" y="469" as="geometry" />
+        </mxCell>
+        <mxCell id="phase-label-design" parent="1" style="text;html=1;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;rotation=150;" value="3. Design" vertex="1">
+          <mxGeometry height="22" width="130" x="522.5" y="620.6" as="geometry" />
+        </mxCell>
+        <mxCell id="phase-label-export" parent="1" style="text;html=1;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;rotation=210;" value="4. Export" vertex="1">
+          <mxGeometry height="22" width="130" x="347.5" y="620.6" as="geometry" />
+        </mxCell>
+        <mxCell id="phase-label-practice" parent="1" style="text;html=1;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;rotation=270;" value="5. Execute" vertex="1">
+          <mxGeometry height="22" width="130" x="260" y="469" as="geometry" />
+        </mxCell>
+        <mxCell id="phase-label-verify" parent="1" style="text;html=1;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;rotation=330;" value="6. Analyze" vertex="1">
+          <mxGeometry height="22" width="130" x="347.5" y="317.5" as="geometry" />
+        </mxCell>
+        <mxCell id="n0-filters" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;fontStyle=1;" value="filters/" vertex="1">
+          <mxGeometry height="55" width="150" x="790" y="373" as="geometry" />
+        </mxCell>
+        <mxCell id="n1-manager" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;" value="eidos-manager" vertex="1">
+          <mxGeometry height="50" width="150" x="790" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="n2-configs" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;fontStyle=1;" value="configs/" vertex="1">
+          <mxGeometry height="55" width="150" x="425" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="n3-gpx" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;fontStyle=1;" value="gpx/" vertex="1">
+          <mxGeometry height="55" width="150" x="608" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="n4-generator" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;" value="eidos-generator" vertex="1">
+          <mxGeometry height="50" width="150" x="640" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="n5-strategies" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;fontStyle=1;" value="strategies/" vertex="1">
+          <mxGeometry height="55" width="150" x="720" y="274" as="geometry" />
+        </mxCell>
+        <mxCell id="n6-designer" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;" value="eidos-designer" vertex="1">
+          <mxGeometry height="50" width="150" x="600" y="760" as="geometry" />
+        </mxCell>
+        <mxCell id="n7-viewer" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;" value="eidos-viewer" vertex="1">
+          <mxGeometry height="50" width="150" x="760" y="455" as="geometry" />
+        </mxCell>
+        <mxCell id="n8-exporter" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;" value="eidos-exporter" vertex="1">
+          <mxGeometry height="50" width="150" x="260" y="760" as="geometry" />
+        </mxCell>
+        <mxCell id="n9-exports" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;fontStyle=1;" value="exports/" vertex="1">
+          <mxGeometry height="55" width="150" x="130" y="630" as="geometry" />
+        </mxCell>
+        <mxCell id="n-practice-group" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;dashed=1;arcSize=4;" value="" vertex="1">
+          <mxGeometry height="215" width="250" x="60" y="375" as="geometry" />
+        </mxCell>
+        <mxCell id="n11-trainer" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;verticalAlign=top;spacingTop=6;" value="eidos-trainer" vertex="1">
+          <mxGeometry height="60" width="200" x="73" y="383" as="geometry" />
+        </mxCell>
+        <mxCell id="n10-navigator" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;verticalAlign=top;spacingTop=6;" value="eidos-navigator (with a simulator, e.g. Biketerra)" vertex="1">
+          <mxGeometry height="60" width="200" x="80" y="428" as="geometry" />
+        </mxCell>
+        <mxCell id="n-zwift" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d9d9d9;strokeColor=#666666;dashed=1;fontSize=12;fontStyle=1;fontColor=#333333;verticalAlign=top;spacingTop=6;" value="Zwift workout" vertex="1">
+          <mxGeometry height="60" width="200" x="90" y="473" as="geometry" />
+        </mxCell>
+        <mxCell id="n-gps-ride" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d9d9d9;strokeColor=#666666;dashed=1;fontSize=12;fontStyle=1;fontColor=#333333;verticalAlign=top;spacingTop=6;" value="Real ride with a GPS cycling computer" vertex="1">
+          <mxGeometry height="60" width="200" x="100" y="518" as="geometry" />
+        </mxCell>
+        <mxCell id="n12-activities" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;fontStyle=1;" value="activities/" vertex="1">
+          <mxGeometry height="55" width="150" x="130" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="w-gen-strat" edge="1" parent="1" source="n4-generator" style="html=1;strokeColor=#b85450;strokeWidth=2;endArrow=block;" target="n5-strategies">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="w-exp-exports" edge="1" parent="1" source="n8-exporter" style="html=1;strokeColor=#b85450;strokeWidth=2;endArrow=block;" target="n9-exports">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="w-practice-act" edge="1" parent="1" source="n-practice-group" style="html=1;strokeColor=#b85450;strokeWidth=2;endArrow=block;" target="n12-activities">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="w-ana-cfg" edge="1" parent="1" source="n13-analyzer" style="html=1;strokeColor=#b85450;strokeWidth=2;endArrow=block;" target="n2-configs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r-gpx-gen" edge="1" parent="1" source="n3-gpx" style="html=1;strokeColor=#6c8ebf;strokeWidth=2;endArrow=block;" target="n4-generator">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r-cfg-gen" edge="1" parent="1" source="n2-configs" style="html=1;strokeColor=#6c8ebf;strokeWidth=2;endArrow=block;" target="n4-generator">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r-filt-view" edge="1" parent="1" source="n0-filters" style="html=1;strokeColor=#6c8ebf;strokeWidth=2;endArrow=block;" target="n7-viewer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r-strat-view" edge="1" parent="1" source="n5-strategies" style="html=1;strokeColor=#6c8ebf;strokeWidth=2;endArrow=block;" target="n7-viewer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r-strat-exp" edge="1" parent="1" style="html=1;strokeColor=#6c8ebf;strokeWidth=2;endArrow=block;rounded=0;curved=1;exitX=0.307;exitY=0.982;exitDx=0;exitDy=0;exitPerimeter=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="720" y="680.99" />
+            </Array>
+            <mxPoint x="766.0500000000002" y="329" as="sourcePoint" />
+            <mxPoint x="410" y="785.99" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r-exports-practice" edge="1" parent="1" source="n9-exports" style="html=1;strokeColor=#6c8ebf;strokeWidth=2;endArrow=block;" target="n-practice-group">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r-act-ana" edge="1" parent="1" source="n12-activities" style="html=1;strokeColor=#6c8ebf;strokeWidth=2;endArrow=block;" target="n13-analyzer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rw-design-strat" edge="1" parent="1" source="n6-designer" style="html=1;strokeColor=#82b366;strokeWidth=2;endArrow=block;startArrow=block;rounded=0;curved=1;" target="n5-strategies">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rw-mgr-cfg" edge="1" parent="1" source="n1-manager" style="html=1;strokeColor=#82b366;strokeWidth=2;endArrow=block;startArrow=block;" target="n2-configs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rw-mgr-filt" edge="1" parent="1" source="n1-manager" style="html=1;strokeColor=#82b366;strokeWidth=2;endArrow=block;startArrow=block;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="n0-filters">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="leg1" parent="1" style="text;html=1;fontSize=11;align=center;fontColor=#b85450;fontStyle=1;" value="→ writes" vertex="1">
+          <mxGeometry height="18" width="90" x="455" y="470" as="geometry" />
+        </mxCell>
+        <mxCell id="leg2" parent="1" style="text;html=1;fontSize=11;align=center;fontColor=#6c8ebf;fontStyle=1;" value="→ reads" vertex="1">
+          <mxGeometry height="18" width="90" x="455" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="leg3" parent="1" style="text;html=1;fontSize=11;align=center;fontColor=#82b366;fontStyle=1;" value="↔ reads + writes" vertex="1">
+          <mxGeometry height="18" width="160" x="420" y="490" as="geometry" />
+        </mxCell>
+        <mxCell id="pcFq_stAQha6qaDLUcxP-1" edge="1" parent="1" source="n9-exports" style="html=1;strokeColor=#6c8ebf;strokeWidth=2;endArrow=block;exitX=0.573;exitY=0;exitDx=0;exitDy=0;exitPerimeter=0;" target="n13-analyzer" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="240" y="620" as="sourcePoint" />
+            <mxPoint x="367.686567164179" y="190" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n13-analyzer" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;" value="eidos-analyzer" vertex="1">
+          <mxGeometry height="50" width="150" x="250" y="157" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

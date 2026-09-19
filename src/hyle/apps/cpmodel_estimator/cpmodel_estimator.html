@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HYLE^TT CP Model Estimator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#12151a; --panel:#191d24; --panel2:#1f242c; --border:#2a303a;
+    --text:#e8eaed; --text-dim:#8b93a1; --accent:#4fa8ff; --accent2:#ff9d4f;
+    --good:#4fd68c; --grid:#252b34;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;}
+  #app{display:flex;flex-direction:column;height:100%;}
+  header{padding:10px 16px;border-bottom:1px solid var(--border);
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--panel);}
+  header h1{font-size:14px;font-weight:600;margin:0;color:var(--text);letter-spacing:.02em;}
+  header h1 span{color:var(--accent);}
+  #metaLine{font-size:11px;color:var(--text-dim);}
+  #main{flex:1;display:flex;min-height:0;overflow:auto;}
+  #left{width:340px;flex:0 0 auto;border-right:1px solid var(--border);
+    padding:16px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;}
+  #right{flex:1;display:flex;flex-direction:column;min-width:0;padding:16px;gap:14px;overflow-y:auto;}
+
+  fieldset{border:1px solid var(--border);border-radius:8px;padding:12px;margin:0;}
+  legend{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;padding:0 6px;}
+
+  .period-row{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:13px;}
+  .period-row input[type=number]{width:64px;background:var(--panel2);border:1px solid var(--border);
+    border-radius:4px;color:var(--text);padding:4px 6px;font-size:13px;}
+  .period-row input[type=number]:disabled{opacity:.4;}
+  .period-row.disabled label{color:var(--text-dim);}
+
+  .range-row{flex-direction:column;align-items:flex-start;gap:6px;}
+  .range-line{display:flex;align-items:center;gap:8px;margin-left:24px;}
+  .range-line .range-line-label{width:34px;color:var(--text-dim);font-size:11px;flex:0 0 auto;}
+  .range-sep{color:var(--text-dim);}
+
+  #estimateBtn{background:var(--accent);color:#0b1622;border:none;border-radius:8px;
+    padding:10px 14px;font-size:13px;font-weight:600;cursor:pointer;}
+  #estimateBtn:hover{filter:brightness(1.08);}
+  #estimateBtn:disabled{opacity:.5;cursor:default;}
+
+  #errorBanner{display:none;background:rgba(255,93,108,.12);border:1px solid #ff5d6c;
+    color:#ff9aa3;border-radius:8px;padding:8px 12px;font-size:12px;margin-bottom:10px;}
+
+  #results{display:flex;flex-direction:column;}
+  .result-row{display:flex;justify-content:space-between;align-items:baseline;
+    padding:9px 2px;border-bottom:1px solid var(--border);}
+  .result-row:last-child{border-bottom:none;}
+  .result-row .result-label{font-size:11px;color:var(--text-dim);letter-spacing:.04em;text-transform:uppercase;}
+  .result-row .result-value{font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;}
+  .result-row .tag{font-size:9px;color:var(--text-dim);margin-left:6px;font-weight:400;letter-spacing:.03em;text-transform:none;}
+  .result-row.is-pinned .tag{color:var(--accent2);}
+  .result-row.is-pinned .result-value{color:var(--accent2);}
+
+  #auxLine{font-size:11px;color:var(--text-dim);display:flex;gap:16px;flex-wrap:wrap;
+    margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);}
+  #auxLine b{color:var(--text);font-weight:600;}
+
+  .clamp-row{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:13px;}
+  .clamp-row label{flex:0 0 auto;color:var(--text-dim);font-size:11px;width:70px;}
+  .clamp-row input[type=number]{width:80px;background:var(--panel2);border:1px solid var(--border);
+    border-radius:4px;color:var(--text);padding:4px 6px;font-size:13px;}
+  .clamp-row .unit{color:var(--text-dim);font-size:11px;}
+
+  #chartWrap{flex:1;min-height:320px;position:relative;background:var(--panel);
+    border:1px solid var(--border);border-radius:8px;padding:10px;}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>HYLE <span>cpmodel_estimator</span></h1>
+    <div id="metaLine">Loading...</div>
+  </header>
+  <div id="main">
+    <div id="left">
+      <fieldset id="periodFieldset">
+        <legend>Period</legend>
+
+        <div class="period-row" data-mode="recent_weeks">
+          <input type="radio" name="period_mode" value="recent_weeks" id="modeWeeks" checked>
+          <label for="modeWeeks">Recent</label>
+          <input type="number" id="weeksInput" value="6" min="1" step="1">
+          <label for="weeksInput">weeks</label>
+        </div>
+
+        <div class="period-row" data-mode="recent_months">
+          <input type="radio" name="period_mode" value="recent_months" id="modeMonths">
+          <label for="modeMonths">Recent</label>
+          <input type="number" id="monthsInput" value="24" min="1" step="1">
+          <label for="monthsInput">months</label>
+        </div>
+
+        <div class="period-row range-row" data-mode="absolute_range">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <input type="radio" name="period_mode" value="absolute_range" id="modeAbsolute">
+            <label for="modeAbsolute">Range</label>
+          </div>
+          <div class="range-line">
+            <span class="range-line-label">From</span>
+            <input type="number" id="startYear" placeholder="Year" min="2000" max="2100" step="1">
+            <span class="range-sep">-</span>
+            <input type="number" id="startMonth" placeholder="Month" min="1" max="12" step="1">
+          </div>
+          <div class="range-line">
+            <span class="range-line-label">To</span>
+            <input type="number" id="endYear" placeholder="Year" min="2000" max="2100" step="1">
+            <span class="range-sep">-</span>
+            <input type="number" id="endMonth" placeholder="Month" min="1" max="12" step="1">
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset id="clampFieldset">
+        <legend>Parameter Settings</legend>
+        <div class="clamp-row">
+          <label for="cpFixedInput">CP</label>
+          <input type="number" id="cpFixedInput" step="0.1" placeholder="Estimate">
+          <span class="unit">W</span>
+        </div>
+        <div class="clamp-row">
+          <label for="wPrimeFixedInput">W'</label>
+          <input type="number" id="wPrimeFixedInput" step="0.1" placeholder="Estimate">
+          <span class="unit">kJ</span>
+        </div>
+        <div class="clamp-row">
+          <label for="pMaxFixedInput">Pmax</label>
+          <input type="number" id="pMaxFixedInput" step="0.1" placeholder="Estimate">
+          <span class="unit">W</span>
+        </div>
+      </fieldset>
+
+      <button id="estimateBtn">Estimate</button>
+
+      <fieldset id="resultsFieldset">
+        <legend>Results</legend>
+        <div id="errorBanner"></div>
+
+        <div id="results">
+          <div class="result-row" id="cpCard">
+            <div class="result-label">CP<span class="tag" id="cpTag"></span></div>
+            <div class="result-value" id="cpVal">—</div>
+          </div>
+          <div class="result-row" id="wPrimeCard">
+            <div class="result-label">W'<span class="tag" id="wPrimeTag"></span></div>
+            <div class="result-value" id="wPrimeVal">—</div>
+          </div>
+          <div class="result-row" id="pMaxCard">
+            <div class="result-label">Pmax<span class="tag" id="pMaxTag"></span></div>
+            <div class="result-value" id="pMaxVal">—</div>
+          </div>
+        </div>
+
+        <div id="auxLine">
+          <span>Activities used: <b id="nActivitiesVal">—</b></span>
+          <span>Valid MMP points: <b id="nPointsVal">—</b></span>
+          <span>Max deviation (envelope): <b id="maxGapVal">—</b></span>
+        </div>
+      </fieldset>
+    </div>
+
+    <div id="right">
+      <div id="chartWrap">
+        <canvas id="mmpChart"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  // Stop the backing Python server when this tab closes (navigates away,
+  // refreshes, etc.) -- otherwise the ThreadingHTTPServer keeps running in
+  // its terminal after the browser side is gone. sendBeacon is used rather
+  // than fetch() because it's designed to survive page teardown; pagehide
+  // fires more reliably than beforeunload/unload across browsers for this
+  // purpose. (Copied verbatim from hyle_fit2gpx_converter.html.)
+  window.addEventListener('pagehide', function(){
+    navigator.sendBeacon('/shutdown');
+  });
+
+  var chart = null;
+
+  function setText(id, text){ document.getElementById(id).textContent = text; }
+
+  function getCheckedMode(){
+    return document.querySelector('input[name="period_mode"]:checked').value;
+  }
+
+  function updatePeriodRowStates(){
+    var mode = getCheckedMode();
+    document.querySelectorAll('.period-row').forEach(function(row){
+      var isActive = row.dataset.mode === mode;
+      row.classList.toggle('disabled', !isActive);
+      row.querySelectorAll('input[type=number]').forEach(function(inp){
+        inp.disabled = !isActive;
+      });
+    });
+  }
+
+  // Clicking/focusing a number input auto-selects its radio group -- pure
+  // UX convenience, not required by spec.
+  document.querySelectorAll('.period-row input[type=number]').forEach(function(inp){
+    inp.addEventListener('focus', function(){
+      var row = inp.closest('.period-row');
+      row.querySelector('input[type=radio]').checked = true;
+      updatePeriodRowStates();
+    });
+  });
+  document.querySelectorAll('input[name="period_mode"]').forEach(function(r){
+    r.addEventListener('change', updatePeriodRowStates);
+  });
+
+  function fillDefaultRangeDates(){
+    var now = new Date();
+    var year = now.getFullYear(), month = now.getMonth() + 1;
+    document.getElementById('startYear').value = year;
+    document.getElementById('startMonth').value = month;
+    document.getElementById('endYear').value = year;
+    document.getElementById('endMonth').value = month;
+  }
+
+  function getPeriodPayload(){
+    var mode = getCheckedMode();
+    if (mode === 'recent_weeks') {
+      return {mode: mode, weeks: parseInt(document.getElementById('weeksInput').value, 10)};
+    }
+    if (mode === 'recent_months') {
+      return {mode: mode, months: parseInt(document.getElementById('monthsInput').value, 10)};
+    }
+    return {
+      mode: mode,
+      start_year: parseInt(document.getElementById('startYear').value, 10),
+      start_month: parseInt(document.getElementById('startMonth').value, 10),
+      end_year: parseInt(document.getElementById('endYear').value, 10),
+      end_month: parseInt(document.getElementById('endMonth').value, 10),
+    };
+  }
+
+  function getFixedPayload(){
+    // Blank means "estimate" -- only non-empty fields are sent, so leaving
+    // all three blank reproduces plain 3-parameter estimation exactly.
+    var fixed = {};
+    var cp = document.getElementById('cpFixedInput').value;
+    var wp = document.getElementById('wPrimeFixedInput').value;
+    var pmax = document.getElementById('pMaxFixedInput').value;
+    if (cp !== '') fixed.cp_w = parseFloat(cp);
+    if (wp !== '') fixed.w_prime_j = parseFloat(wp) * 1000;  // kJ -> J
+    if (pmax !== '') fixed.p_max_physio_w = parseFloat(pmax);
+    return fixed;
+  }
+
+  function getEstimatePayload(){
+    var payload = getPeriodPayload();
+    payload.fixed = getFixedPayload();
+    return payload;
+  }
+
+  function showError(msg){
+    var el = document.getElementById('errorBanner');
+    if (!msg) {
+      el.style.display = 'none';
+      el.textContent = '';
+    } else {
+      el.style.display = 'block';
+      el.textContent = msg;
+    }
+  }
+
+  function setPinnedTag(cardId, tagId, isPinned){
+    document.getElementById(cardId).classList.toggle('is-pinned', isPinned);
+    setText(tagId, isPinned ? '(pinned)' : '(estimated)');
+  }
+
+  // Formats a duration in seconds as "Ns" (< 60s) or "Mm" / "Mm Ss"
+  // (>= 60s) for the chart's x-axis ticks -- raw seconds are hard to read
+  // at a glance once you're into multi-minute durations.
+  function formatDuration(seconds){
+    var s = Math.round(seconds);
+    if (s < 60) return s + 's';
+    var m = Math.floor(s / 60);
+    var rem = s % 60;
+    return rem === 0 ? (m + 'm') : (m + 'm ' + rem + 's');
+  }
+
+  function updateChart(mmpPoints, fitCurve){
+    var observed = mmpPoints.map(function(p){ return {x: p.t_s, y: p.p_w, date: p.date}; });
+    var fitted = fitCurve.map(function(p){ return {x: p.t_s, y: p.p_w}; });
+    if (chart) chart.destroy();
+    chart = new Chart(document.getElementById('mmpChart').getContext('2d'), {
+      type: 'line',
+      data: {
+        datasets: [
+          {label: 'MMP (observed)', data: observed, showLine: false, pointRadius: 4,
+           pointBackgroundColor: '#4fa8ff', pointBorderColor: '#4fa8ff',
+           backgroundColor: '#4fa8ff', borderColor: '#4fa8ff'},
+          {label: 'Morton 3p fit', data: fitted, showLine: true, pointRadius: 0,
+           borderColor: '#ff9d4f', borderWidth: 2},
+        ],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: false, parsing: false,
+        interaction: {mode: 'nearest', intersect: false},
+        plugins: {
+          legend: {labels: {color: '#e8eaed'}},
+          tooltip: {
+            callbacks: {
+              label: function(ctx){
+                var line = ctx.dataset.label + ': ' + formatDuration(ctx.parsed.x) + ', ' + ctx.parsed.y.toFixed(1) + 'W';
+                var isoDate = ctx.raw && ctx.raw.date;
+                if (isoDate) {
+                  // Source ride's date/time, converted from the stored UTC
+                  // timestamp to whatever timezone this browser/OS is set
+                  // to -- lets an outlier point be traced back to its
+                  // source ride directly from the chart.
+                  line += ' (' + new Date(isoDate).toLocaleString() + ')';
+                }
+                return line;
+              },
+            },
+          },
+        },
+        scales: {
+          x: {
+            type: 'logarithmic',
+            title: {display: true, text: 'Duration', color: '#8b93a1'},
+            grid: {color: '#252b34'},
+            ticks: {color: '#8b93a1', callback: function(value){ return formatDuration(value); }},
+          },
+          y: {
+            title: {display: true, text: 'Power [W]', color: '#8b93a1'},
+            grid: {color: '#252b34'},
+            ticks: {color: '#8b93a1'},
+          },
+        },
+      },
+    });
+  }
+
+  function renderResult(data){
+    showError(data.ok ? null : data.error);
+
+    if (data.ok) {
+      var fixedParams = data.fit.fixed_params || [];
+      setText('cpVal', data.fit.cp_w.toFixed(1) + ' W');
+      setText('wPrimeVal', (data.fit.w_prime_j / 1000).toFixed(2) + ' kJ');
+      setText('pMaxVal', data.fit.p_max_physio_w.toFixed(1) + ' W');
+      setText('maxGapVal', data.fit.max_gap_w.toFixed(1) + ' W (mean ' + data.fit.mean_gap_w.toFixed(1) + ' W)');
+      setPinnedTag('cpCard', 'cpTag', fixedParams.indexOf('cp_w') !== -1);
+      setPinnedTag('wPrimeCard', 'wPrimeTag', fixedParams.indexOf('w_prime_j') !== -1);
+      setPinnedTag('pMaxCard', 'pMaxTag', fixedParams.indexOf('p_max_physio_w') !== -1);
+    } else {
+      setText('cpVal', '—');
+      setText('wPrimeVal', '—');
+      setText('pMaxVal', '—');
+      setText('maxGapVal', '—');
+      setPinnedTag('cpCard', 'cpTag', false);
+      setPinnedTag('wPrimeCard', 'wPrimeTag', false);
+      setPinnedTag('pMaxCard', 'pMaxTag', false);
+    }
+
+    setText('nActivitiesVal', data.n_activities_used != null ? data.n_activities_used : '—');
+    setText('nPointsVal', data.n_mmp_points != null ? data.n_mmp_points : '—');
+
+    updateChart(data.mmp_points || [], data.ok ? data.fit.fit_curve : []);
+  }
+
+  function doEstimate(){
+    var btn = document.getElementById('estimateBtn');
+    btn.disabled = true;
+    fetch('/estimate', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(getEstimatePayload()),
+    })
+      .then(function(res){ return res.json(); })
+      .then(renderResult)
+      .catch(function(err){ showError('Request failed: ' + err); })
+      .finally(function(){ btn.disabled = false; });
+  }
+
+  function loadMeta(){
+    fetch('/meta').then(function(res){ return res.json(); }).then(function(m){
+      setText('metaLine',
+        m.total_files + ' files scanned — ' + m.parsed_ok + ' usable / ' +
+        (m.total_files - m.parsed_ok) + ' skipped' +
+        (m.earliest_activity ? ' (' + m.earliest_activity.slice(0, 10) + ' to ' + m.latest_activity.slice(0, 10) + ')' : ''));
+    }).catch(function(){ setText('metaLine', ''); });
+  }
+
+  document.getElementById('estimateBtn').addEventListener('click', doEstimate);
+  fillDefaultRangeDates();
+  updatePeriodRowStates();
+  loadMeta();
+  doEstimate();
+})();
+</script>
+</body>
+</html>

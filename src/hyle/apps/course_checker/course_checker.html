@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>HYLE^TT Course Checker</title>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.2.0/chartjs-plugin-zoom.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  :root{
+    --bg:#12151a; --panel:#191d24; --panel2:#1f242c; --border:#2a303a;
+    --text:#e8eaed; --text-dim:#8b93a1; --accent:#4fa8ff; --accent2:#ff9d4f;
+    --good:#4fd68c; --warn:#ffcc4f; --grid:#252b34;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;}
+  #app{display:flex;flex-direction:column;height:100%;}
+  header{padding:10px 16px;border-bottom:1px solid var(--border);
+    display:flex;align-items:center;gap:18px;flex-wrap:wrap;background:var(--panel);}
+  header h1{font-size:14px;font-weight:600;margin:0;color:var(--text);letter-spacing:.02em;}
+  header h1 span{color:var(--accent);}
+  .meta{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--text-dim);}
+  .meta b{color:var(--text);font-weight:600;}
+  #main{flex:1;display:flex;min-height:0;}
+  #viewport3d{flex:1.3;position:relative;border-right:1px solid var(--border);min-width:0;}
+  #viewport3d canvas{display:block;}
+  #controls3d{position:absolute;top:10px;right:10px;background:rgba(25,29,36,.85);
+    border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:11px;
+    color:var(--text-dim);display:flex;flex-direction:column;gap:8px;min-width:150px;}
+  #controls3d label{display:flex;justify-content:space-between;gap:8px;align-items:center;}
+  #controls3d input[type=range]{width:80px;}
+  #controls3d .val{color:var(--text);font-variant-numeric:tabular-nums;width:34px;text-align:right;}
+  #right{flex:1;display:flex;flex-direction:column;min-width:0;}
+  #charts{flex:1;overflow:auto;padding:10px 14px 4px;}
+  .chart-block{margin-bottom:10px;}
+  .chart-title{font-size:11px;color:var(--text-dim);margin:0 0 2px 2px;letter-spacing:.03em;}
+  .chart-wrap{position:relative;height:110px;background:var(--panel);border:1px solid var(--border);
+    border-radius:6px;padding:4px 8px;}
+  #readout{border-top:1px solid var(--border);background:var(--panel);padding:10px 14px;
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px 14px;font-size:12px;}
+  #readout .item{display:flex;flex-direction:column;gap:2px;}
+  #readout .item .k{color:var(--text-dim);font-size:10px;letter-spacing:.04em;text-transform:uppercase;}
+  #readout .item .v{font-size:15px;font-variant-numeric:tabular-nums;font-weight:600;}
+  #sliderBar{border-top:1px solid var(--border);background:var(--panel);padding:12px 16px 14px;}
+  #sliderBar .row{display:flex;align-items:center;gap:12px;}
+  #distTrack{flex:1;position:relative;height:22px;background:var(--panel2);
+    border-radius:11px;cursor:pointer;touch-action:none;}
+  #distTrack:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  #distFill{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--accent);
+    opacity:0.35;border-radius:11px 0 0 11px;pointer-events:none;}
+  #distHandle{position:absolute;top:50%;left:0;width:16px;height:16px;border-radius:50%;
+    background:#fff;border:2px solid var(--accent);transform:translate(-50%,-50%);
+    pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,.4);}
+  #distLabel{font-size:12px;color:var(--text-dim);width:150px;text-align:right;
+    font-variant-numeric:tabular-nums;}
+  .legend{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-dim);}
+  .swatch{width:10px;height:10px;border-radius:2px;display:inline-block;}
+  #mapPanel{position:relative;width:100%;aspect-ratio:1/1;background:var(--panel);border:1px solid var(--border);
+    border-radius:6px;overflow:hidden;}
+  #mapPanel .leaflet-container{background:#1a1e25;}
+  /* Mute the OSM base tiles so course points (colored by power/slope/kappa,
+     including yellow-green mid-range hues) stay legible against the map's
+     own green/yellow land-use colors instead of blending into them. Scoped
+     to leaflet-tile-pane only -- markers/overlays are in separate panes and
+     are unaffected. */
+  #mapPanel .leaflet-tile-pane{filter:grayscale(0.85) brightness(1.1) contrast(0.9);}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>HYLE <span>course_checker</span></h1>
+    <div class="meta" id="metaBar"></div>
+  </header>
+  <div id="main">
+    <div id="viewport3d">
+      <div id="controls3d">
+        <div style="font-size:10px;line-height:1.5;color:var(--text-dim);border-bottom:1px solid var(--border);padding-bottom:6px;">
+          Left-drag: rotate<br>Right-drag: pan<br>Scroll: zoom
+        </div>
+        <label>Vertical exaggeration
+          <input type="range" id="exaggSlider" min="1" max="15" step="0.5" value="1">
+          <span class="val" id="exaggVal">1.0x</span>
+        </label>
+        <label>Color by
+          <select id="colorMode" style="background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:11px;">
+            <option value="segment">Segment target power</option>
+            <option value="kappa">Curvature (kappa)</option>
+            <option value="slope">Slope</option>
+          </select>
+        </label>
+      </div>
+    </div>
+    <div id="right">
+      <div id="charts">
+        <div style="font-size:10px;color:var(--text-dim);margin:0 2px 8px;">
+          Scroll: zoom &nbsp;|&nbsp; Drag: pan &nbsp;|&nbsp; Double-click: reset (distance axis, synced across charts)
+        </div>
+        <div class="chart-block">
+          <div class="chart-title">Altitude (m)</div>
+          <div class="chart-wrap"><canvas id="chartAlt"></canvas></div>
+        </div>
+        <div class="chart-block">
+          <div class="chart-title">Slope (%)</div>
+          <div class="chart-wrap"><canvas id="chartSlope"></canvas></div>
+        </div>
+        <div class="chart-block">
+          <div class="chart-title">Radius (m, log scale)</div>
+          <div class="chart-wrap"><canvas id="chartRadius"></canvas></div>
+        </div>
+        <div class="chart-block">
+          <div class="chart-title">Map</div>
+          <div id="mapPanel"></div>
+        </div>
+      </div>
+      <div id="readout">
+        <div class="item"><span class="k">distance</span><span class="v" id="roDist">-</span></div>
+        <div class="item"><span class="k">x / y (m)</span><span class="v" id="roXY">-</span></div>
+        <div class="item"><span class="k">altitude</span><span class="v" id="roZ">-</span></div>
+        <div class="item"><span class="k">radius</span><span class="v" id="roRadius">-</span></div>
+        <div class="item"><span class="k">slope</span><span class="v" id="roSlope">-</span></div>
+        <div class="item"><span class="k">v_limit</span><span class="v" id="roVlim">-</span></div>
+        <div class="item"><span class="k">segment target</span><span class="v" id="roSeg">-</span></div>
+        <div class="item"><span class="k">sample</span><span class="v" id="roSample">-</span></div>
+      </div>
+    </div>
+  </div>
+  <div id="sliderBar">
+    <div class="row">
+      <span style="font-size:11px;color:var(--text-dim);">0 m</span>
+      <div id="distTrack" tabindex="0">
+        <div id="distFill"></div>
+        <div id="distHandle"></div>
+      </div>
+      <span style="font-size:11px;color:var(--text-dim);" id="distMaxLabel">- m</span>
+      <span id="distLabel">distance = 0 m</span>
+    </div>
+  </div>
+</div>
+
+<script>
+const COURSE_DATA = /*__COURSE_DATA_JSON__*/{}/*__END_COURSE_DATA_JSON__*/;
+
+(function(){
+  const D = COURSE_DATA;
+  const n = D.distance_m.length;
+
+  // ---------- meta bar ----------
+  const metaBar = document.getElementById('metaBar');
+  const m = D.meta || {};
+  metaBar.innerHTML = [
+    ['file', m.source_filename],
+    ['n_seg', m.n_seg],
+    ['seed', m.seed],
+    ['total_time', m.total_time_s != null ? m.total_time_s.toFixed(1)+' s' : null],
+    ['points', n],
+    ['length', D.distance_m[n-1].toFixed(0)+' m'],
+  ].filter(p => p[1] != null && p[1] !== '')
+   .map(p => `<span>${p[0]}: <b>${p[1]}</b></span>`).join('');
+
+  // ---------- segment color helper ----------
+  const segments = D.segments || [];
+  function segColorAt(distM){
+    if (!segments.length) return [0.6,0.6,0.6];
+    for (const s of segments){
+      if (distM >= s.start_m && distM <= s.end_m) return powerToColor(s.target_p_w, segMinP, segMaxP);
+    }
+    return powerToColor(segments[segments.length-1].target_p_w, segMinP, segMaxP);
+  }
+  const segMinP = Math.min(...segments.map(s=>s.target_p_w));
+  const segMaxP = Math.max(...segments.map(s=>s.target_p_w));
+  function lerpColor(a,b,t){ return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t]; }
+  function powerToColor(v, lo, hi){
+    const stops = [[0.30,0.55,1.0],[0.30,0.85,0.55],[1.0,0.80,0.30],[1.0,0.35,0.35]];
+    let t = hi>lo ? (v-lo)/(hi-lo) : 0.5;
+    t = Math.max(0, Math.min(1, t));
+    const seg = t*(stops.length-1);
+    const i = Math.min(stops.length-2, Math.floor(seg));
+    return lerpColor(stops[i], stops[i+1], seg-i);
+  }
+  function scalarToColor(v, lo, hi){ return powerToColor(v, lo, hi); }
+
+  // ---------- curvature radius helper ----------
+  // radius = 1/|kappa|; clamp near-straight sections (kappa -> 0) to a
+  // finite cap so the value/chart stay sane (log scale can't take Infinity).
+  const RADIUS_CAP_M = 100000;
+  function kappaToRadius(k){
+    const a = Math.abs(k);
+    return a > 0 ? Math.min(RADIUS_CAP_M, 1/a) : RADIUS_CAP_M;
+  }
+  const D_radius_m = D.kappa.map(kappaToRadius);
+
+  // ---------- three.js scene ----------
+  const viewport = document.getElementById('viewport3d');
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x12151a);
+  const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100000);
+  camera.up.set(0, 0, 1); // course uses Z as vertical (altitude); three.js default up is Y.
+                          // Must be set BEFORE OrbitControls / lookAt or orbiting looks tilted.
+  const renderer = new THREE.WebGLRenderer({antialias:true});
+  viewport.appendChild(renderer.domElement);
+
+  function resizeRenderer(){
+    const w = viewport.clientWidth, h = viewport.clientHeight;
+    renderer.setSize(w, h);
+    camera.aspect = w/h;
+    camera.updateProjectionMatrix();
+  }
+
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.screenSpacePanning = true; // pan relative to camera view, not world XY plane
+  // Left-drag: rotate / Right-drag: pan / Scroll: zoom (three.js default mapping)
+
+  // bounding box (raw, unexaggerated) to center scene
+  let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity,minZ=Infinity,maxZ=-Infinity;
+  for (let i=0;i<n;i++){
+    minX=Math.min(minX,D.x_m[i]); maxX=Math.max(maxX,D.x_m[i]);
+    minY=Math.min(minY,D.y_m[i]); maxY=Math.max(maxY,D.y_m[i]);
+    minZ=Math.min(minZ,D.z_m[i]); maxZ=Math.max(maxZ,D.z_m[i]);
+  }
+  const cx=(minX+maxX)/2, cy=(minY+maxY)/2, cz=(minZ+maxZ)/2;
+  const spanXY = Math.max(maxX-minX, maxY-minY, 50);
+  let exagg = 1.0; // vertical exaggeration; declared here (moved up from below)
+                    // since updateGridPosition() below needs it immediately.
+
+  // grid + axes for spatial reference
+  const grid = new THREE.GridHelper(spanXY*1.4, 20, 0x2a303a, 0x1c2129);
+  grid.rotation.x = Math.PI/2;
+  // Course points are rendered centered on cz and scaled by exagg (see
+  // buildSamplePoints: (D.z_m[i] - cz) * exagg), not at their raw altitude.
+  // The grid must sit in that same space -- a fixed raw-altitude Z would
+  // only coincidentally line up near the terrain, and drift further off
+  // (in the wrong direction, since it never moves) as exagg increases.
+  function updateGridPosition(){
+    grid.position.set(cx, cy, (minZ - cz) * exagg - (maxZ - minZ) * 0.05 * exagg - 1);
+  }
+  updateGridPosition();
+  scene.add(grid);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+  const dl = new THREE.DirectionalLight(0xffffff, 0.4);
+  dl.position.set(1,1,1);
+  scene.add(dl);
+
+  let colorMode = 'segment';
+
+  let markerObj = null, pointsObj = null;
+
+  // Circular sprite texture so THREE.Points render as round dots instead
+  // of the default square GL point sprites.
+  function makeCircleTexture(){
+    const size = 64;
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    ctx.beginPath();
+    ctx.arc(size/2, size/2, size/2 - 2, 0, Math.PI*2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    return new THREE.CanvasTexture(canvas);
+  }
+  const circleSprite = makeCircleTexture();
+
+  function colorForIndex(i, mode){
+    if (mode === 'segment') return segColorAt(D.distance_m[i]);
+    if (mode === 'kappa'){
+      const kk = D.kappa.map(Math.abs);
+      const lo = Math.min(...kk), hi = Math.max(...kk);
+      return scalarToColor(Math.abs(D.kappa[i]), lo, hi);
+    }
+    if (mode === 'slope'){
+      const lo = Math.min(...D.slope), hi = Math.max(...D.slope);
+      return scalarToColor(D.slope[i], lo, hi);
+    }
+    return [0.6,0.6,0.6];
+  }
+
+  function computePositionsAndColors(){
+    const positions = new Float32Array(n*3);
+    const colors = new Float32Array(n*3);
+    for (let i=0;i<n;i++){
+      positions[i*3+0] = D.x_m[i] - cx;
+      positions[i*3+1] = D.y_m[i] - cy;
+      positions[i*3+2] = (D.z_m[i] - cz) * exagg;
+      const c = colorForIndex(i, colorMode);
+      colors[i*3+0]=c[0]; colors[i*3+1]=c[1]; colors[i*3+2]=c[2];
+    }
+    return {positions, colors};
+  }
+
+  function buildSamplePoints(){
+    if (pointsObj){ scene.remove(pointsObj); pointsObj.geometry.dispose(); pointsObj.material.dispose(); pointsObj=null; }
+    const {positions, colors} = computePositionsAndColors();
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute('position', new THREE.BufferAttribute(positions,3));
+    geom.setAttribute('color', new THREE.BufferAttribute(colors,3));
+    const mat = new THREE.PointsMaterial({
+      vertexColors:true, size:4, sizeAttenuation:false,
+      map: circleSprite, alphaTest: 0.5,
+    });
+    pointsObj = new THREE.Points(geom, mat);
+    scene.add(pointsObj);
+  }
+
+  function buildMarker(){
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array([0,0,0]), 3));
+    // sizeAttenuation:false -> constant pixel size regardless of zoom/distance,
+    // so it doesn't balloon into an unreadable blob when zoomed in close.
+    const mat = new THREE.PointsMaterial({
+      color: 0xffffff, size: 10, sizeAttenuation: false,
+      map: circleSprite, alphaTest: 0.5,
+      depthTest: false, // stays visible on top of the course points
+    });
+    markerObj = new THREE.Points(geom, mat);
+    markerObj.renderOrder = 999;
+    scene.add(markerObj);
+  }
+
+  buildSamplePoints();
+  buildMarker();
+
+  camera.position.set(cx + spanXY*0.5, cy - spanXY*0.9, (maxZ-cz)*exagg + spanXY*0.5);
+  controls.target.set(0,0,0);
+  camera.lookAt(0,0,0);
+  controls.minDistance = spanXY * 0.03; // avoid dollying through the target, which
+  controls.maxDistance = spanXY * 6;    // flips the camera orientation and makes panning feel broken
+
+  function animate(){
+    requestAnimationFrame(animate);
+    controls.update();
+    renderer.render(scene, camera);
+  }
+
+  // ---------- distance <-> index helpers ----------
+  function indexForDistance(distM){
+    // binary search over D.distance_m (monotonic increasing)
+    let lo=0, hi=n-1;
+    if (distM <= D.distance_m[0]) return 0;
+    if (distM >= D.distance_m[n-1]) return n-1;
+    while (lo < hi-1){
+      const mid = (lo+hi)>>1;
+      if (D.distance_m[mid] <= distM) lo = mid; else hi = mid;
+    }
+    const t = (distM - D.distance_m[lo]) / Math.max(1e-6, D.distance_m[hi]-D.distance_m[lo]);
+    return lo + t; // fractional index
+  }
+
+  function segmentTargetAt(distM){
+    for (const s of segments){
+      if (distM >= s.start_m && distM <= s.end_m) return s.target_p_w;
+    }
+    return segments.length ? segments[segments.length-1].target_p_w : null;
+  }
+
+  // Takes an exact sample index (not a continuous distance) so values
+  // shown are the real recorded sample, not an interpolation between two
+  // -- important where samples are closer together than 1m near segment
+  // boundaries, which is exactly where precise inspection matters most.
+  function updateMarker(idx){
+    const x = D.x_m[idx] - cx;
+    const y = D.y_m[idx] - cy;
+    const zRaw = D.z_m[idx];
+    const z = (zRaw - cz) * exagg;
+    markerObj.position.set(x,y,z);
+
+    const distM = D.distance_m[idx];
+    const radius = D_radius_m[idx];
+    const slope = D.slope[idx];
+    const vlim = D.v_limit ? D.v_limit[idx] : null;
+
+    document.getElementById('roDist').textContent = distM.toFixed(2)+' m';
+    document.getElementById('roXY').textContent = x.toFixed(1)+' / '+y.toFixed(1);
+    document.getElementById('roZ').textContent = zRaw.toFixed(1)+' m';
+    document.getElementById('roRadius').textContent =
+      (radius >= RADIUS_CAP_M ? '>'+RADIUS_CAP_M.toFixed(0) : radius.toFixed(1))+' m';
+    document.getElementById('roSlope').textContent = (slope*100).toFixed(1)+' %';
+    document.getElementById('roVlim').textContent = vlim!=null ? vlim.toFixed(2)+' m/s' : '-';
+    const segP = segmentTargetAt(distM);
+    document.getElementById('roSeg').textContent = segP!=null ? segP.toFixed(0)+' W' : '-';
+    document.getElementById('roSample').textContent = idx + ' / ' + (n-1);
+
+    updateChartLines(distM);
+    updateMap(idx);
+  }
+
+  // ---------- charts ----------
+  if (window.ChartZoom && typeof Chart.register === 'function'){
+    Chart.register(window.ChartZoom); // UMD build usually self-registers; this is a safety net
+  }
+  Chart.defaults.color = '#8b93a1';
+  Chart.defaults.font.size = 10;
+  const gridColor = '#252b34';
+
+  const allCharts = [];
+  function syncZoomToOthers(sourceChart){
+    const xs = sourceChart.scales.x;
+    allCharts.forEach(c=>{
+      if (c === sourceChart) return;
+      c.zoomScale('x', {min:xs.min, max:xs.max}, 'none');
+    });
+  }
+
+  function makeChart(ctx, label, data, color, yOpts){
+    yOpts = yOpts || {};
+    const chart = new Chart(ctx, {
+      type:'line',
+      data:{
+        labels:D.distance_m,
+        datasets:[{
+          data:data, showLine:false, // points only -- zoom in to inspect individual samples
+          pointRadius:1.6, pointHoverRadius:1.6,
+          pointBackgroundColor:color, pointBorderWidth:0,
+        }]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false, animation:false,
+        interaction:{intersect:false},
+        plugins:{
+          legend:{display:false}, tooltip:{enabled:false},
+          zoom:{
+            pan:{
+              enabled:true, mode:'x',
+              onPanComplete:({chart})=>syncZoomToOthers(chart),
+            },
+            zoom:{
+              wheel:{enabled:true}, pinch:{enabled:true}, mode:'x',
+              onZoomComplete:({chart})=>syncZoomToOthers(chart),
+            },
+          },
+        },
+        scales:{
+          x:{type:'linear', grid:{color:gridColor}, ticks:{maxTicksLimit:6,
+              callback:v=>Math.round(v)+'m'}},
+          y:Object.assign({grid:{color:gridColor}, ticks:{maxTicksLimit:4}}, yOpts)
+        }
+      },
+      plugins:[{
+        id:'vline',
+        afterDraw(chart){
+          const x = chart.__vlineX;
+          if (x == null) return;
+          const {ctx, chartArea:{top,bottom}, scales:{x:xs}} = chart;
+          const px = xs.getPixelForValue(x);
+          if (px < xs.left || px > xs.right) return;
+          ctx.save();
+          ctx.strokeStyle = '#4fa8ff';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(px, top);
+          ctx.lineTo(px, bottom);
+          ctx.stroke();
+          ctx.restore();
+        }
+      }]
+    });
+    allCharts.push(chart);
+    // double-click resets zoom on this chart and keeps the other two in sync
+    chart.canvas.addEventListener('dblclick', ()=>{
+      chart.resetZoom();
+      syncZoomToOthers(chart);
+    });
+    return chart;
+  }
+
+  const chartAlt = makeChart(document.getElementById('chartAlt'), 'altitude', D.z_m, '#4fd68c');
+  const chartSlope = makeChart(document.getElementById('chartSlope'), 'slope', D.slope.map(v=>v*100), '#4fa8ff');
+  const chartRadius = makeChart(document.getElementById('chartRadius'), 'radius', D_radius_m, '#ff9d4f',
+    {type:'logarithmic', ticks:{maxTicksLimit:4, callback:v=>{
+      // logarithmic axis emits every intermediate tick (2,3,4...9) by default;
+      // only label the power-of-ten ticks to keep this compact 110px chart readable.
+      const l = Math.log10(v);
+      return Math.abs(l - Math.round(l)) < 1e-9 ? v : '';
+    }}});
+
+  function updateChartLines(distM){
+    [chartAlt, chartSlope, chartRadius].forEach(c=>{ c.__vlineX = distM; c.draw(); });
+  }
+
+  // ---------- Leaflet map (course overlaid on real map) ----------
+  function colorArrToHex(c){
+    const toHex = v => Math.max(0,Math.min(255,Math.round(v*255))).toString(16).padStart(2,'0');
+    return '#' + toHex(c[0]) + toHex(c[1]) + toHex(c[2]);
+  }
+
+  let leafletMap = null, leafletMarker = null, mapPointMarkers = [];
+  if (D.lat_deg && D.lon_deg && D.lat_deg.length === n){
+    leafletMap = L.map('mapPanel', {zoomControl:true, attributionControl:false, preferCanvas:true});
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 22,       // allow zooming in further than the tiles actually exist for...
+      maxNativeZoom: 19, // ...by upscaling the highest-resolution (z=19) tiles Leaflet has
+    }).addTo(leafletMap);
+    const latlngs = D.lat_deg.map((la,i)=>[la, D.lon_deg[i]]);
+    // sample points only, no connecting line -- colored the same way as the 3D view
+    const bounds = L.latLngBounds(latlngs);
+    latlngs.forEach((ll,i) => {
+      const hex = colorArrToHex(colorForIndex(i, colorMode));
+      const m = L.circleMarker(ll, {
+        radius:2, color:hex, weight:0, fillColor:hex, fillOpacity:0.9
+      }).addTo(leafletMap);
+      mapPointMarkers.push(m);
+    });
+    leafletMap.fitBounds(bounds, {padding:[12,12]});
+    leafletMarker = L.circleMarker(latlngs[0], {
+      radius:6, color:'#12151a', weight:1.5, fillColor:'#ffffff', fillOpacity:1
+    }).addTo(leafletMap);
+    setTimeout(()=>leafletMap.invalidateSize(), 50);
+    window.addEventListener('resize', ()=>leafletMap.invalidateSize());
+  }
+
+  function recolorMapPoints(){
+    if (!mapPointMarkers.length) return;
+    for (let i=0;i<n;i++){
+      const hex = colorArrToHex(colorForIndex(i, colorMode));
+      mapPointMarkers[i].setStyle({color:hex, fillColor:hex});
+    }
+  }
+  function updateMap(idx){
+    if (!leafletMarker) return;
+    leafletMarker.setLatLng([D.lat_deg[idx], D.lon_deg[idx]]);
+  }
+
+  // ---------- slider wiring (custom track, not a native <input type=range>) ----------
+  // Sample spacing isn't perfectly uniform: distance_p_m_list is resampled
+  // at a fixed ~1m stride, but the course's total length is (almost never)
+  // an exact multiple of that stride, so the final interval is a shorter
+  // leftover fragment. A native range input's meter-based `step` can't
+  // represent that exactly, and a custom keydown handler running
+  // *alongside* one fights its native default action (unreliably so in
+  // Safari). This control is a plain div with no built-in keyboard/drag
+  // behavior of its own, so there is nothing to fight: every interaction
+  // is resolved directly to an exact sample index.
+  const distTrack = document.getElementById('distTrack');
+  const distFill = document.getElementById('distFill');
+  const distHandle = document.getElementById('distHandle');
+  const distLabel = document.getElementById('distLabel');
+  const distMax = D.distance_m[n-1];
+  document.getElementById('distMaxLabel').textContent = distMax.toFixed(0)+' m';
+
+  let currentIdx = 0;
+
+  function setIndex(idx){
+    currentIdx = Math.max(0, Math.min(n-1, idx));
+    const frac = D.distance_m[currentIdx] / distMax;
+    distFill.style.width = (frac*100)+'%';
+    distHandle.style.left = (frac*100)+'%';
+    distLabel.textContent = 'distance = ' + D.distance_m[currentIdx].toFixed(2) + ' m';
+    updateMarker(currentIdx);
+  }
+
+  function indexFromClientX(clientX){
+    const rect = distTrack.getBoundingClientRect();
+    let frac = (clientX - rect.left) / rect.width;
+    frac = Math.max(0, Math.min(1, frac));
+    return Math.round(indexForDistance(frac * distMax)); // snap to nearest real sample
+  }
+
+  let dragging = false;
+  distTrack.addEventListener('pointerdown', (e)=>{
+    dragging = true;
+    distTrack.setPointerCapture(e.pointerId);
+    distTrack.focus();
+    setIndex(indexFromClientX(e.clientX));
+  });
+  distTrack.addEventListener('pointermove', (e)=>{
+    if (dragging) setIndex(indexFromClientX(e.clientX));
+  });
+  distTrack.addEventListener('pointerup', ()=>{ dragging = false; });
+  distTrack.addEventListener('pointercancel', ()=>{ dragging = false; });
+
+  distTrack.addEventListener('keydown', (e)=>{
+    if (e.key === 'ArrowLeft'){ e.preventDefault(); setIndex(currentIdx - 1); }
+    else if (e.key === 'ArrowRight'){ e.preventDefault(); setIndex(currentIdx + 1); }
+  });
+
+  // ---------- 3D control wiring ----------
+  const exaggSlider = document.getElementById('exaggSlider');
+  const exaggVal = document.getElementById('exaggVal');
+  exaggSlider.addEventListener('input', ()=>{
+    exagg = parseFloat(exaggSlider.value);
+    exaggVal.textContent = exagg.toFixed(1)+'x';
+    updateGridPosition();
+    buildSamplePoints();
+    setIndex(currentIdx);
+  });
+  document.getElementById('colorMode').addEventListener('change', (e)=>{
+    colorMode = e.target.value;
+    buildSamplePoints();
+    recolorMapPoints();
+  });
+
+  window.addEventListener('resize', resizeRenderer);
+  resizeRenderer();
+  animate();
+  setIndex(0);
+})();
+</script>
+</body>
+</html>

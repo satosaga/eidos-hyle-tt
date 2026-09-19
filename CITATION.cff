@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "(EIDOS/HYLE)^TT"
+type: software
+authors:
+  - given-names: Sato
+    family-names: SAGA
+    orcid: "https://orcid.org/0000-0002-4484-1464"
+repository-code: "https://github.com/satosaga/eidos-hyle-tt"
+url: "https://github.com/satosaga/eidos-hyle-tt"
+license: GPL-3.0-or-later
+version: 0.1.0
+abstract: "A workbench for designing, refining, practicing, and analyzing pacing strategy for cycling time trials."
+keywords:
+  - cycling
+  - time trial
+  - pacing strategy
+  - critical power
+  - W-prime

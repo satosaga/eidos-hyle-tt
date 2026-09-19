@@ -1,0 +1,36 @@
+name: Feature request
+description: Propose something new, or a change to existing behavior.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        See `CONTRIBUTING.md`'s "What to discuss first" — anything
+        touching the core design (the physics/physiology model, the
+        optimizer's course-agnostic philosophy, the EIDOS/HYLE split,
+        reproducibility tracking) is worth opening as an issue before
+        any code is written, which is exactly what this template is for.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: What can't you do today, or what's awkward about the current behavior?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: >-
+        If this is a new simulator or optimizer variant, see
+        `docs/ADDING_A_SIMULATOR_OR_OPTIMIZER.md` first -- the registry
+        design may already cover what you need without any core changes.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: false

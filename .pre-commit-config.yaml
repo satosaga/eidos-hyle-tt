@@ -1,0 +1,38 @@
+# See docs/RUNBOOK.md's "First-time setup" for how to enable this
+# (pip install -e ".[dev]" && pre-commit install).
+repos:
+  - repo: local
+    hooks:
+      - id: code-version-bump-check
+        name: Enforce code_version bump policy (simulator/data_manager/optimizer)
+        entry: scripts/check_code_version_bump.sh
+        language: script
+        pass_filenames: false
+        always_run: true
+
+      - id: registry-consistency-check
+        name: SIMULATOR_REGISTRY/OPTIMIZER_REGISTRY stay in sync with VERSIONED_PAIRS/REPRODUCIBILITY_RELEVANT_PATHS
+        entry: pytest tests/test_registry_consistency.py
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: doc-code-reference-check
+        name: docs/*.md file-path references stay valid; src/ never references docs/*.md
+        entry: pytest tests/test_doc_code_references.py
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: mypy-known-errors-check
+        name: mypy src reports only known-triaged errors (see ARCHITECTURE.md's mypy adoption)
+        entry: pytest tests/test_mypy_known_errors.py
+        language: system
+        pass_filenames: false
+        always_run: true
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.1  # keep in step with pyproject.toml's ruff>=0.16 pin
+    hooks:
+      - id: ruff-check
+        args: [--fix]

@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HYLE^TT FIT → GPX Converter</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+  :root{
+    --bg:#0c0f14;
+    --panel:#12161d;
+    --panel-2:#171d26;
+    --border:#28313d;
+    --border-2:#374252;
+    --text:#dbe2ea;
+    --text-dim:#7c8899;
+    --accent:#ff9a4d;      /* selection band / trim */
+    --accent-soft:rgba(255,154,77,0.18);
+    --track:#43c9b8;       /* full course line */
+    --track-dim:#3a4552;
+    --danger:#ff5d6c;
+    --mono:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;
+    --sans:-apple-system,'Segoe UI',Roboto,Hiragino Sans,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    font-size:13px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{
+    display:flex;
+    flex-direction:column;
+    height:100vh;
+    min-height:560px;
+  }
+  header{
+    padding:10px 16px;
+    border-bottom:1px solid var(--border);
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+    flex:0 0 auto;
+    background:linear-gradient(180deg,var(--panel-2),var(--panel));
+  }
+  header h1{
+    font-size:14px;
+    font-weight:600;
+    letter-spacing:.02em;
+    margin:0;
+    color:var(--text);
+  }
+  header .sub{
+    font-size:11px;
+    color:var(--text-dim);
+    font-family:var(--mono);
+  }
+  header .spacer{flex:1;}
+
+  #dropzone{
+    flex:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .drop-card{
+    width:min(480px,90vw);
+    border:1px dashed var(--border-2);
+    border-radius:6px;
+    padding:36px 28px;
+    text-align:center;
+    background:var(--panel);
+  }
+  .drop-card p{color:var(--text-dim);font-size:12px;line-height:1.7;margin:6px 0 18px;}
+  .drop-card .icon{font-size:26px;margin-bottom:10px;opacity:.7;}
+  .err-msg{
+    margin-top:16px;
+    color:var(--danger);
+    font-family:var(--mono);
+    font-size:11.5px;
+    white-space:pre-wrap;
+    text-align:left;
+  }
+
+  #workspace{
+    flex:1;
+    display:none;
+    flex-direction:column;
+    min-height:0;
+  }
+  .main-grid{
+    flex:1;
+    display:grid;
+    grid-template-columns:1fr 300px;
+    min-height:0;
+  }
+  #map{
+    background:#0a0c10;
+    min-height:0;
+  }
+  .side-panel{
+    border-left:1px solid var(--border);
+    background:var(--panel);
+    display:flex;
+    flex-direction:column;
+    overflow-y:auto;
+  }
+  .readout{
+    padding:10px 14px;
+    border-bottom:1px solid var(--border);
+  }
+  .readout .label{
+    font-size:10px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    display:flex;
+    align-items:center;
+    gap:6px;
+    margin-bottom:6px;
+  }
+  .dot{width:7px;height:7px;border-radius:50%;display:inline-block;}
+  .dot.start{background:#5ad1ff;}
+  .dot.end{background:var(--accent);}
+  .readout table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11.5px;}
+  .readout table td{padding:1.5px 0;}
+  .readout table td.k{color:var(--text-dim);}
+  .readout table td.v{text-align:right;font-variant-numeric:tabular-nums;}
+  .readout-summary{
+    padding:10px 14px;
+    border-bottom:1px solid var(--border);
+    background:var(--panel-2);
+  }
+  .readout-summary .label{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;}
+  .readout-summary table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px;}
+  .readout-summary table td{padding:2px 0;}
+  .readout-summary table td.k{color:var(--text-dim);}
+  .readout-summary table td.v{text-align:right;font-variant-numeric:tabular-nums;color:var(--accent);font-weight:600;}
+
+  .export-box{
+    margin-top:auto;
+    padding:14px;
+    border-top:1px solid var(--border);
+  }
+  .export-box label{
+    display:block;
+    font-size:10px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    margin-bottom:5px;
+  }
+  .export-box .label-row{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:8px;
+  }
+  .export-box .label-row label{margin-bottom:5px;}
+  .export-box .btn-inline{
+    width:auto;
+    flex:0 0 auto;
+    background:transparent;
+    border:1px solid var(--border-2);
+    color:var(--text-dim);
+    font-family:var(--mono);
+    font-size:10px;
+    font-weight:600;
+    padding:3px 9px;
+    border-radius:3px;
+    cursor:pointer;
+    letter-spacing:.02em;
+    text-transform:none;
+    white-space:nowrap;
+  }
+  .export-box .btn-inline:hover{border-color:var(--accent);color:var(--accent);}
+  .export-box .btn-inline:disabled{opacity:0.5;cursor:default;border-color:var(--border-2);color:var(--text-dim);}
+  .export-box input{
+    width:100%;
+    background:var(--panel-2);
+    border:1px solid var(--border-2);
+    color:var(--text);
+    font-family:var(--mono);
+    font-size:11.5px;
+    padding:7px 8px;
+    border-radius:3px;
+    margin-bottom:10px;
+  }
+  .export-box button{
+    width:100%;
+    background:var(--accent);
+    color:#241202;
+    font-weight:700;
+    font-size:12.5px;
+    padding:10px;
+    border:none;
+    border-radius:4px;
+    cursor:pointer;
+    letter-spacing:.02em;
+  }
+  .export-box button:hover{filter:brightness(1.08);}
+  .export-box .hint{margin-top:8px;font-size:10.5px;color:var(--text-dim);line-height:1.5;}
+  #calcOffsetHint{
+    margin:0 0 8px;
+    min-height:1.4em;
+    font-size:10.5px;
+    color:var(--text-dim);
+    line-height:1.5;
+  }
+  .chart-wrap{
+    flex:0 0 auto;
+    height:190px;
+    border-top:1px solid var(--border);
+    background:var(--panel);
+    position:relative;
+    padding:8px 10px 34px 10px;
+  }
+  #speedChart{width:100%;height:100%;}
+
+  #offsetAnalysisModal{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(6,8,11,0.7);
+    /* Well above Leaflet's own panes/controls (tilePane/overlayPane/
+       markerPane/popupPane run 200-700, and its zoom control sits around
+       1000), or this modal renders underneath the map instead of over it. */
+    z-index:2000;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  #offsetAnalysisModal.visible{display:flex;}
+  .modal-panel{
+    width:min(820px,100%);
+    max-height:100%;
+    background:var(--panel);
+    border:1px solid var(--border-2);
+    border-radius:8px;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    box-shadow:0 12px 40px rgba(0,0,0,0.5);
+  }
+  .modal-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:12px 16px;
+    border-bottom:1px solid var(--border);
+    font-size:13px;
+    font-weight:600;
+  }
+  .modal-close{
+    background:none;
+    border:none;
+    color:var(--text-dim);
+    font-size:22px;
+    line-height:1;
+    cursor:pointer;
+    padding:0 4px;
+  }
+  .modal-close:hover{color:var(--text);}
+  .modal-body{
+    padding:16px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    overflow-y:auto;
+  }
+  .modal-chart-block{height:170px;position:relative;cursor:crosshair;}
+  .modal-chart-block.modal-chart-traj{height:300px;cursor:default;}
+  .chart-caption{font-size:11px;color:var(--text-dim);margin:-8px 0 0 0;}
+  .chart-readout{
+    position:absolute;
+    top:6px;
+    left:8px;
+    background:rgba(23,29,38,0.88);
+    border:1px solid var(--border-2);
+    border-radius:4px;
+    padding:4px 8px;
+    font-size:11px;
+    color:var(--text);
+    font-family:var(--mono);
+    pointer-events:none;
+    z-index:5;
+  }
+  .traj-legend{
+    position:absolute;
+    top:8px;
+    right:8px;
+    background:rgba(23,29,38,0.88);
+    border:1px solid var(--border-2);
+    border-radius:4px;
+    padding:6px 8px;
+    font-size:10px;
+    color:var(--text-dim);
+    font-family:var(--mono);
+    cursor:move;
+    user-select:none;
+    z-index:5;
+    max-height:calc(100% - 16px);
+    max-width:60%;
+    overflow-y:auto;
+  }
+  .traj-legend .item{display:flex;align-items:center;gap:6px;padding:1.5px 0;white-space:nowrap;}
+  .traj-legend .swatch{width:12px;height:2px;flex:0 0 auto;border-radius:1px;}
+  .btn-confirm{
+    flex:0 0 auto;
+    width:100%;
+    background:var(--accent);
+    color:#241202;
+    font-weight:700;
+    font-size:13px;
+    padding:10px;
+    border:none;
+    border-radius:4px;
+    cursor:pointer;
+    letter-spacing:.02em;
+  }
+  .btn-confirm:hover{filter:brightness(1.08);}
+
+  .slider-track{
+    position:absolute;
+    top:0;left:0;
+    width:100%;
+    height:100%;
+    pointer-events:none;
+  }
+  .selection-band{
+    position:absolute;
+    top:8px;
+    bottom:34px;
+    background:var(--accent-soft);
+    border-left:1px solid var(--accent);
+    border-right:1px solid var(--accent);
+    pointer-events:none;
+  }
+  .handle{
+    position:absolute;
+    top:8px;
+    bottom:34px;
+    width:10px;
+    margin-left:-5px;
+    cursor:ew-resize;
+    pointer-events:auto;
+  }
+  .handle::before{
+    content:"";
+    position:absolute;
+    top:0;bottom:0;left:4px;width:2px;
+    background:var(--handle-color,#5ad1ff);
+  }
+  .handle::after{
+    content:"";
+    position:absolute;
+    top:-2px;left:0;width:10px;height:10px;
+    background:var(--handle-color,#5ad1ff);
+    border-radius:2px;
+  }
+  .handle:focus{outline:none;}
+  .handle:focus::after{box-shadow:0 0 0 3px rgba(255,255,255,0.25);}
+  .handle.start{--handle-color:#5ad1ff;}
+  .handle.end{--handle-color:var(--accent);}
+  .handle .tag{
+    position:absolute;
+    bottom:-20px;
+    left:50%;
+    transform:translateX(-50%);
+    font-family:var(--mono);
+    font-size:9.5px;
+    color:var(--text-dim);
+    white-space:nowrap;
+  }
+
+  ::-webkit-scrollbar{width:8px;height:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:4px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+
+  .leaflet-container{background:#0a0c10;}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>FIT &rarr; GPX Converter</h1>
+    <span class="sub" id="headerSub">Manually trim start/end</span>
+    <div class="spacer"></div>
+  </header>
+
+  <div id="dropzone">
+    <div class="drop-card">
+      <div class="icon">&#9673;</div>
+      <p id="loadStatusText">Loading FIT file...</p>
+      <div class="err-msg" id="errMsg"></div>
+    </div>
+  </div>
+
+  <div id="workspace">
+    <div class="main-grid">
+      <div id="map"></div>
+      <div class="side-panel">
+        <div class="readout" id="readoutStart">
+          <div class="label"><span class="dot start"></span>Start</div>
+          <table>
+            <tr><td class="k">index</td><td class="v" id="s_idx">-</td></tr>
+            <tr><td class="k">elapsed</td><td class="v" id="s_time">-</td></tr>
+            <tr><td class="k">distance</td><td class="v" id="s_dist">-</td></tr>
+            <tr><td class="k">speed</td><td class="v" id="s_spd">-</td></tr>
+            <tr><td class="k">lat/lon</td><td class="v" id="s_latlon">-</td></tr>
+          </table>
+        </div>
+        <div class="readout" id="readoutEnd">
+          <div class="label"><span class="dot end"></span>End</div>
+          <table>
+            <tr><td class="k">index</td><td class="v" id="e_idx">-</td></tr>
+            <tr><td class="k">elapsed</td><td class="v" id="e_time">-</td></tr>
+            <tr><td class="k">distance</td><td class="v" id="e_dist">-</td></tr>
+            <tr><td class="k">speed</td><td class="v" id="e_spd">-</td></tr>
+            <tr><td class="k">lat/lon</td><td class="v" id="e_latlon">-</td></tr>
+          </table>
+        </div>
+        <div class="readout-summary">
+          <div class="label">Trimmed segment</div>
+          <table>
+            <tr><td class="k">duration</td><td class="v" id="sum_time">-</td></tr>
+            <tr><td class="k">distance</td><td class="v" id="sum_dist">-</td></tr>
+            <tr><td class="k">avg speed</td><td class="v" id="sum_spd">-</td></tr>
+            <tr><td class="k">points</td><td class="v" id="sum_pts">-</td></tr>
+          </table>
+        </div>
+        <div class="export-box">
+          <div class="label-row">
+            <label for="altOffsetInput">Altitude timestamp offset (s)</label>
+            <button id="calcOffsetBtn" type="button" class="btn-inline">Analyze offset</button>
+          </div>
+          <!-- value="6" is only the pre-JS fallback (matches core.io_config's
+               DEFAULT_POWER_OFFSET_S); buildPoints() overwrites it from
+               /parsed.json's power_offset_s once the FIT is loaded -- see
+               there and hyle.apps.fit2gpx_converter's main(). -->
+          <input type="number" id="altOffsetInput" value="6" step="0.1">
+          <div id="calcOffsetHint"></div>
+          <label for="filenameInput">Output filename</label>
+          <input type="text" id="filenameInput" value="trim.gpx">
+          <button id="exportBtn">Export GPX</button>
+          <div class="hint" id="exportHint"></div>
+        </div>
+      </div>
+    </div>
+    <div class="chart-wrap" id="chartWrap">
+      <canvas id="speedChart"></canvas>
+      <div class="slider-track" id="sliderTrack">
+        <div class="selection-band" id="selectionBand"></div>
+        <div class="handle start" id="handleStart" tabindex="0"><span class="tag" id="tagStart"></span></div>
+        <div class="handle end" id="handleEnd" tabindex="0"><span class="tag" id="tagEnd"></span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="offsetAnalysisModal">
+  <div class="modal-panel">
+    <div class="modal-header">
+      <span>Altitude Timestamp Offset Analysis</span>
+      <button type="button" id="offsetModalClose" class="modal-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="chart-caption">Speed-domain RMSE (Auto Fit-calibrated physics)</div>
+      <div class="modal-chart-block">
+        <canvas id="calcOffsetChart" tabindex="0"></canvas>
+        <div class="chart-readout" id="tauReadout"></div>
+      </div>
+      <div class="modal-chart-block modal-chart-traj">
+        <canvas id="calcOffsetTrajChart"></canvas>
+        <div class="traj-legend" id="trajLegend"></div>
+      </div>
+      <button type="button" id="confirmOffsetBtn" class="btn-confirm">Set tau = -.- s</button>
+    </div>
+  </div>
+</div>
+
+<!-- FIT parsing happens once in Python (core.activity_parser.parse_fit_file), served as JSON at /parsed.json. See __init__.py module docstring. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
+<script>
+(function(){
+  'use strict';
+
+  // Stop the backing Python server when this tab closes (navigates away,
+  // refreshes, etc.) -- otherwise the ThreadingHTTPServer keeps running in
+  // its terminal after the browser side is gone, unlike the eidos.apps.*
+  // Qt apps (closing the window ends the process) or hyle.apps.course_checker
+  // (no server at all). sendBeacon is used rather than fetch() because it
+  // survives page teardown; pagehide fires more reliably than
+  // beforeunload/unload across browsers for this purpose.
+  window.addEventListener('pagehide', function(){
+    navigator.sendBeacon('/shutdown');
+  });
+
+  // ---------- state ----------
+  var state = {
+    pts: [],          // filtered records with valid lat/lon
+    hasTime: false,
+    startIdx: 0,
+    endIdx: 0,
+    fileBase: 'trim',
+    map: null,
+    fullLine: null,
+    selLine: null,
+    startMarker: null,
+    endMarker: null,
+    chart: null,
+    calcOffsetChart: null,
+    calcOffsetTrajChart: null,
+    offsetCurve: [],        // [{offset_s, score}], set after a successful analysis
+    offsetTrajectories: [],  // [{offset_s, sim_speed_ms}], one per curve point (see _TRAJ_SUBSAMPLE)
+    offsetTrajDistanceKm: [], // distance axis (km) shared by every trajectory dataset + the highlight dataset
+    trajHighlightDatasetIdx: null, // index into calcOffsetTrajChart's datasets of the always-shown selected-tau line
+    selectedTau: null,      // tau currently previewed in the popup, not yet applied to altOffsetInput
+    trajLegendPos: null,    // {left, top} in px once the user drags the trajectory chart's legend
+    dragging: null     // 'start' | 'end' | null
+  };
+
+  var el = {};
+  ['errMsg','workspace','dropzone','headerSub',
+   'map','chartWrap','speedChart','sliderTrack','selectionBand','handleStart','handleEnd',
+   'tagStart','tagEnd','filenameInput','exportBtn','exportHint',
+   's_idx','s_time','s_dist','s_spd','s_latlon',
+   'e_idx','e_time','e_dist','e_spd','e_latlon',
+   'sum_time','sum_dist','sum_spd','sum_pts',
+   'altOffsetInput',
+   'calcOffsetBtn','calcOffsetHint',
+   'offsetAnalysisModal','offsetModalClose','calcOffsetChart','calcOffsetTrajChart',
+   'confirmOffsetBtn','trajLegend','tauReadout'
+  ].forEach(function(id){ el[id] = document.getElementById(id); });
+
+  // ---------- helpers ----------
+  function fmtTime(sec){
+    if (!isFinite(sec)) return '-';
+    sec = Math.max(0, Math.round(sec));
+    var h = Math.floor(sec/3600);
+    var m = Math.floor((sec%3600)/60);
+    var s = sec%60;
+    var p = function(n){ return (n<10?'0':'')+n; };
+    return (h>0 ? h+':'+p(m)+':'+p(s) : m+':'+p(s));
+  }
+  function fmtDist(km){
+    if (!isFinite(km)) return '-';
+    return km.toFixed(3)+' km';
+  }
+  function fmtSpd(kmh){
+    if (!isFinite(kmh)) return '-';
+    return kmh.toFixed(1)+' km/h';
+  }
+  function fmtLatLon(lat, lon){
+    if (!isFinite(lat) || !isFinite(lon)) return '-';
+    return lat.toFixed(5)+', '+lon.toFixed(5);
+  }
+  // Linear interpolation of an arbitrary point field, by name, at an
+  // arbitrary elapsed-time value, looked up against the FULL (untrimmed)
+  // point series. eleAtElapsed is built on this.
+  function fieldAtElapsed(field, t){
+    var pts = state.pts;
+    var n = pts.length;
+    if (n === 0) return null;
+    if (t <= pts[0].elapsed) return pts[0][field];
+    if (t >= pts[n-1].elapsed) return pts[n-1][field];
+    var lo = 0, hi = n - 1;
+    while (lo < hi){
+      var mid = (lo + hi) >> 1;
+      if (pts[mid].elapsed < t) lo = mid + 1; else hi = mid;
+    }
+    var i1 = lo, i0 = lo - 1;
+    if (i0 < 0) return pts[i1][field];
+    var e0 = pts[i0].elapsed, e1 = pts[i1].elapsed;
+    var v0 = pts[i0][field], v1 = pts[i1][field];
+    if (v0 === null && v1 === null) return null;
+    if (v0 === null) return v1;
+    if (v1 === null) return v0;
+    if (e1 === e0) return v0;
+    var frac = (t - e0) / (e1 - e0);
+    return v0 + (v1 - v0) * frac;
+  }
+
+  // Altitude lookup at an arbitrary elapsed-time value. Used to shift
+  // altitude earlier/later relative to speed/position at export time
+  // without mutating the loaded data.
+  function eleAtElapsed(t){
+    return fieldAtElapsed('ele', t);
+  }
+
+  function escapeXml(s){
+    return String(s).replace(/[<>&'"]/g, function(c){
+      return {'<':'&lt;','>':'&gt;','&':'&amp;',"'":'&apos;','"':'&quot;'}[c];
+    });
+  }
+
+  function showError(msg){
+    el.errMsg.textContent = msg || '';
+  }
+
+  // ---------- point list, built from /parsed.json ----------
+  // FIT parsing itself happens once, in Python (core.activity_parser.
+  // parse_fit_file via hyle.apps.fit2gpx_converter's _parse_fit_for_browser)
+  // -- this page is a pure visualization / trim-selection front end. data
+  // is /parsed.json's body: parallel arrays (time_s, distance_m, speed_ms,
+  // power_w, altitude_m, lat_deg, lon_deg, timestamp_ms), all the same
+  // length, null where a value wasn't recorded for that sample. Field
+  // names match core.activity_parser.FlatFITData's own attribute names.
+  function buildPoints(data){
+    var pts = [];
+    var n = data.time_s.length;
+
+    for (var i=0; i<n; i++){
+      var lat = data.lat_deg[i], lon = data.lon_deg[i];
+      // Every sample here already has timestamp+distance+speed (Python's
+      // parse_fit_file requires all three to include a sample at all) --
+      // but lat/lon can still be null (no GPS fix for that sample), and
+      // this tool is fundamentally about drawing/exporting a course line,
+      // so those samples are skipped.
+      if (lat === null || lon === null) continue;
+
+      pts.push({
+        lat: lat, lon: lon,
+        ele: data.altitude_m[i],
+        t: new Date(data.timestamp_ms[i]),
+        dist: data.distance_m[i],
+        spd: data.speed_ms[i],
+        hr: null,
+        pw: data.power_w[i],
+        elapsed: data.time_s[i]
+      });
+    }
+
+    if (pts.length < 2){
+      showError('Not enough records with valid position (lat/lon) data (' + pts.length + ')');
+      return;
+    }
+
+    state.pts = pts;
+    state.hasTime = true;
+    state.startIdx = 0;
+    state.endIdx = pts.length - 1;
+
+    el.headerSub.textContent = pts.length + ' points';
+    el.filenameInput.value = state.fileBase + '_trim.gpx';
+    // Shared with eidos.apps.analyzer's own Altitude lag spinbox via
+    // core.io_config.load_power_offset_s (temp/power_offset_memory.json)
+    // -- see hyle.apps.fit2gpx_converter's main(). Only overwritten when the
+    // server actually sent a value; otherwise leaves the input's own
+    // static HTML fallback (also 6) alone.
+    if (data.power_offset_s !== undefined && data.power_offset_s !== null){
+      el.altOffsetInput.value = data.power_offset_s;
+    }
+
+    el.dropzone.style.display = 'none';
+    el.workspace.style.display = 'flex';
+
+    initMap();
+    initChart();
+    initSlider();
+    updateAll();
+  }
+
+  // ---------- map ----------
+  function initMap(){
+    if (state.map){ state.map.remove(); }
+    state.map = L.map(el.map, { zoomControl: true, attributionControl: false });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19
+    }).addTo(state.map);
+
+    var latlngs = state.pts.map(function(p){ return [p.lat, p.lon]; });
+    state.fullLine = L.polyline(latlngs, { color:'#3a4552', weight:3, opacity:0.9 }).addTo(state.map);
+    state.selLine = L.polyline([], { color:'#ff9a4d', weight:4, opacity:0.95 }).addTo(state.map);
+    state.startMarker = L.circleMarker([0,0], { radius:6, color:'#5ad1ff', weight:2, fillColor:'#5ad1ff', fillOpacity:0.9 }).addTo(state.map);
+    state.endMarker = L.circleMarker([0,0], { radius:6, color:'#ff9a4d', weight:2, fillColor:'#ff9a4d', fillOpacity:0.9 }).addTo(state.map);
+
+    state.map.fitBounds(state.fullLine.getBounds(), { padding:[20,20] });
+  }
+
+  // ---------- chart ----------
+  function initChart(){
+    if (state.chart){ state.chart.destroy(); }
+    var xLabel = state.hasTime ? 'Elapsed time (s)' : 'Sample index';
+    var data = state.pts.map(function(p){ return { x: p.elapsed, y: p.spd*3.6 }; });
+
+    state.chart = new Chart(el.speedChart.getContext('2d'), {
+      type: 'line',
+      data: {
+        datasets: [{
+          data: data,
+          borderColor: '#43c9b8',
+          borderWidth: 1.3,
+          pointRadius: 0,
+          tension: 0.15,
+          fill: false,
+          yAxisID: 'y'
+        }, {
+          // Altitude overlay, shifted live by altOffsetInput -- a manual
+          // visual-alignment aid: line it up against the speed dips by
+          // eye and adjust the offset field. (calcOffsetPhysics below
+          // runs the automated version.)
+          data: [],
+          borderColor: '#ff9a4d',
+          borderWidth: 1.1,
+          pointRadius: 0,
+          tension: 0.15,
+          fill: false,
+          yAxisID: 'y1'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        parsing: false,
+        normalized: true,
+        interaction: { mode: 'nearest', intersect: false },
+        scales: {
+          x: {
+            type: 'linear',
+            title: { display: true, text: xLabel, color:'#7c8899', font:{size:10} },
+            ticks: { color:'#7c8899', font:{size:9} },
+            grid: { color:'#1c2430' }
+          },
+          y: {
+            title: { display: true, text: 'Speed (km/h)', color:'#7c8899', font:{size:10} },
+            ticks: { color:'#7c8899', font:{size:9} },
+            grid: { color:'#1c2430' }
+          },
+          y1: {
+            position: 'right',
+            title: { display: true, text: 'Altitude (m)', color:'#ff9a4d', font:{size:10} },
+            ticks: { color:'#ff9a4d', font:{size:9} },
+            grid: { display: false }
+          }
+        },
+        plugins: { legend: { display:false }, tooltip: { enabled:false } }
+      }
+    });
+
+    var ro = new ResizeObserver(function(){ positionHandles(); });
+    ro.observe(el.chartWrap);
+
+    updateAltOverlay();
+  }
+
+  // Recomputes the altitude-overlay dataset from the current
+  // altOffsetInput value and redraws it without animation. Called on
+  // load, and live on every offset-input keystroke so the person can
+  // drag the offset and watch the curves slide.
+  function updateAltOverlay(){
+    if (!state.chart) return;
+    var ds = state.chart.data.datasets[1];
+    var offset = parseFloat(el.altOffsetInput.value);
+    if (!isFinite(offset)) offset = 0;
+    ds.data = state.pts
+      .map(function(p){ return { x: p.elapsed, y: eleAtElapsed(p.elapsed + offset) }; })
+      .filter(function(pt){ return pt.y !== null; });
+    state.chart.update('none');
+  }
+
+  // ---------- physics-based altitude-offset auto-calc ----------
+  // Posts the exact trimmed segment (same range the GPX export uses) to
+  // /calc_offset, which alternates fitting this rider's own physical
+  // parameters (Auto Fit, via core.calibrator) against a tau-shifted
+  // altitude-derived course profile and re-searching tau (scored by
+  // speed-domain RMSE against the calibrated physics) until both settle
+  // -- see calc_altitude_offset_autofit() in hyle.apps.fit2gpx_converter
+  // for the full method. This result is a
+  // suggestion only: it lands in the same editable altOffsetInput field
+  // used everywhere else, so it can be reviewed (via the overlay chart
+  // above) and hand-adjusted before export, never applied silently.
+  //
+  // Margin beyond the search range, so the Python side's altitude-shift
+  // lookup never needs to extrapolate past real recorded samples near
+  // the trim boundaries -- np.interp's flat-clamp extrapolation biases
+  // the search toward the edges of the offset range on some courses.
+  var CALC_OFFSET_LOOKUP_MARGIN_S = 35;
+
+  // Builds the payload shape /calc_offset expects: the trimmed segment's
+  // own arrays, plus a margin-extended altitude lookup table drawn from
+  // the full untrimmed activity (same source eleAtElapsed uses) so tau
+  // shifts never need to extrapolate past real recorded samples near the
+  // trim boundaries.
+  //
+  // gps_lookup_* applies the same idea to lat/lon: the GPS-distance/
+  // GPS-speed curve calc_altitude_offset fits
+  // (core.activity_parser._compute_gps_distance_speed_m) uses an
+  // unconstrained spline with no boundary condition at either end (see
+  // _fit_time_b_spline's docstring), which relies on every caller
+  // fitting over a window padded past its segment of interest so the
+  // fit's own less-constrained edge never lands inside the range
+  // actually evaluated. Without this margin, lat/lon would be fit AND
+  // evaluated on the boundary-truncated trim itself, exposing the GPS
+  // distance/speed curve to instability right at the trim boundary. No
+  // ele filter here (unlike lookupPts above) since state.pts already
+  // guarantees valid lat/lon for every point (see buildPoints) -- only
+  // ele can be null per-sample.
+  function buildOffsetSearchPayload(){
+    if (!state.pts.length) return null;
+    var pts = state.pts.slice(state.startIdx, state.endIdx + 1);
+    if (pts.length < 20) return null;
+    var t0 = pts[0].elapsed;
+    var d0 = pts[0].dist;
+
+    var lookupLo = pts[0].elapsed - CALC_OFFSET_LOOKUP_MARGIN_S;
+    var lookupHi = pts[pts.length - 1].elapsed + CALC_OFFSET_LOOKUP_MARGIN_S;
+    var lookupPts = state.pts.filter(function(p){
+      return p.ele !== null && p.elapsed >= lookupLo && p.elapsed <= lookupHi;
+    });
+    var gpsLookupPts = state.pts.filter(function(p){
+      return p.elapsed >= lookupLo && p.elapsed <= lookupHi;
+    });
+
+    return {
+      time_s:     pts.map(function(p){ return p.elapsed - t0; }),
+      distance_m: pts.map(function(p){ return p.dist - d0; }),
+      power_w:    pts.map(function(p){ return p.pw; }),
+      altitude_m: pts.map(function(p){ return p.ele; }),
+      lat_deg:    pts.map(function(p){ return p.lat; }),
+      lon_deg:    pts.map(function(p){ return p.lon; }),
+      speed_ms:   pts.map(function(p){ return p.spd; }),
+      alt_lookup_time_s:    lookupPts.map(function(p){ return p.elapsed - t0; }),
+      alt_lookup_altitude_m: lookupPts.map(function(p){ return p.ele; }),
+      gps_lookup_time_s:     gpsLookupPts.map(function(p){ return p.elapsed - t0; }),
+      gps_lookup_lat_deg:    gpsLookupPts.map(function(p){ return p.lat; }),
+      gps_lookup_lon_deg:    gpsLookupPts.map(function(p){ return p.lon; }),
+      gps_lookup_altitude_m: gpsLookupPts.map(function(p){ return p.ele; })
+    };
+  }
+
+  // Non-null while a /calc_offset request is in flight -- calcOffsetPhysics
+  // itself doubles as the Cancel handler while this is set (see its own
+  // first check below), so calcOffsetBtn never needs a second listener.
+  // Auto Fit's cost scales with the SELECTED segment's length, so on an
+  // untrimmed multi-hour activity this can run far longer than a
+  // race-segment trim would -- Cancel only aborts the browser-side fetch;
+  // the Python side has no matching cancellation hook, so it keeps
+  // computing until its own multistart finishes, then fails harmlessly
+  // trying to write to the now-closed connection. A real server-side
+  // cancel would need core.calibrator.calibrate's own should_cancel
+  // wired through from here.
+  var calcOffsetAbortController = null;
+  // Polls GET /calc_offset_progress while calcOffsetAbortController is
+  // set -- see pollCalcOffsetProgress's own comment for why (live status
+  // text, not a static "this may take a while" message).
+  var calcOffsetProgressTimer = null;
+
+  function calcOffsetPhysics(){
+    if (calcOffsetAbortController){
+      calcOffsetAbortController.abort();
+      return;
+    }
+
+    var payload = buildOffsetSearchPayload();
+    if (!payload){
+      el.calcOffsetHint.textContent = 'Segment too short (need at least 20 points)';
+      return;
+    }
+
+    calcOffsetAbortController = new AbortController();
+    el.calcOffsetBtn.textContent = 'Cancel';
+    el.calcOffsetHint.textContent = 'starting...';
+    calcOffsetProgressTimer = setInterval(pollCalcOffsetProgress, 400);
+
+    fetch('/calc_offset', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload),
+      signal: calcOffsetAbortController.signal
+    }).then(function(r){
+      return r.json().then(function(data){ return {ok: r.ok, data: data}; });
+    }).then(function(res){
+      if (!res.ok || !res.data.ok){
+        el.calcOffsetHint.textContent = 'Calculation error: ' + (res.data && res.data.error ? res.data.error : 'unknown error');
+        return;
+      }
+      var d = res.data;
+      el.calcOffsetHint.textContent = '';
+      state.offsetCurve = d.curve;
+      state.offsetTrajectories = d.trajectories;
+      renderCalcOffsetChart(d.curve);
+      // GPS-derived speed (recorded_speed_ms) -- the same signal every
+      // candidate curve's score was actually computed against server-side
+      // (see calc_altitude_offset_autofit's own docstring) -- not
+      // payload.speed_ms (raw FIT speed_ms), which would show a
+      // "Recorded" reference line the tau search never actually used.
+      renderCalcOffsetTrajChart(d.trajectories, payload.distance_m, d.recorded_speed_ms);
+      openOffsetModal(d.best_offset_s);
+    }).catch(function(err){
+      el.calcOffsetHint.textContent = (err && err.name === 'AbortError')
+        ? 'Cancelled'
+        : 'Communication error: ' + (err && err.message ? err.message : err);
+    }).finally(function(){
+      calcOffsetAbortController = null;
+      el.calcOffsetBtn.textContent = 'Analyze offset';
+      clearInterval(calcOffsetProgressTimer);
+      calcOffsetProgressTimer = null;
+    });
+  }
+
+  // Polls the server's own live Auto Fit progress state (see
+  // calc_altitude_offset_autofit's _autofit_progress in
+  // hyle.apps.fit2gpx_converter) and writes it into the hint line -- same
+  // live-status-text idiom eidos.apps.analyzer's own Auto Fit progress
+  // label uses (AutoFitWorker's progress_callback -> a QLabel reading
+  // "trial n/N -- best velocity RMSE=...m/s -- elapsed Xs"), not a
+  // progress bar or a static "this may take a while" message.
+  function pollCalcOffsetProgress(){
+    fetch('/calc_offset_progress').then(function(r){ return r.json(); }).then(function(p){
+      if (!p.active) return;
+      el.calcOffsetHint.textContent = formatAutofitProgress(p);
+    }).catch(function(){ /* transient poll failure -- next tick retries */ });
+  }
+
+  function formatAutofitProgress(p){
+    if (p.stage === 'initial_tau') return 'computing initial tau estimate...';
+    if (p.stage === 'rescoring') return 'round ' + p.round + '/' + p.max_rounds + ' -- re-scoring tau candidates...';
+    if (p.stage === 'calibrating'){
+      var rmse = (p.best_rmse !== null && p.best_rmse !== undefined) ? p.best_rmse.toFixed(3) + ' m/s' : '...';
+      return 'round ' + p.round + '/' + p.max_rounds + ' -- Auto Fit trial ' + p.trial + '/' + p.n_trials +
+             ' -- best RMSE=' + rmse + ' -- elapsed ' + Math.round(p.elapsed_s || 0) + 's';
+    }
+    return 'working...';
+  }
+
+  // ---------- offset-analysis popup ----------
+  function openOffsetModal(initialTau){
+    el.offsetAnalysisModal.classList.add('visible');
+    applyTauSelection(initialTau);
+    // Static marker for where the analysis started (lowest RMSE) -- stays
+    // put at this position for the rest of the popup's lifetime,
+    // even as the yellow point above is dragged/nudged elsewhere. Only
+    // (re)set here, once, when a fresh curve is loaded.
+    markInitialBest(initialTau);
+    // Focus the chart so the left/right arrow keys (see initTauDrag) work
+    // immediately without requiring the person to click into it first.
+    el.calcOffsetChart.focus();
+  }
+
+  // Closing (X, backdrop click, Escape) is a cancel -- altOffsetInput is
+  // left untouched. Only confirmOffsetSelection() (the "Set tau = ..."
+  // button) actually applies the popup's selection to the caller.
+  function closeOffsetModal(){
+    el.offsetAnalysisModal.classList.remove('visible');
+  }
+
+  // Finds the curve sample nearest a given tau -- shared by the moving
+  // selection marker (applyTauSelection) and the static initial-best
+  // marker (markInitialBest) so both snap to the same candidate grid.
+  function nearestCurveEntry(tau){
+    var entry = null, bestDiff = Infinity;
+    for (var i = 0; i < state.offsetCurve.length; i++){
+      var diff = Math.abs(state.offsetCurve[i].offset_s - tau);
+      if (diff < bestDiff){ bestDiff = diff; entry = state.offsetCurve[i]; }
+    }
+    return entry;
+  }
+
+  // Single entry point for "the user is previewing this tau": updates
+  // state.selectedTau, the confirm button's own label (so "apply" always
+  // names the exact value it applies), the highlighted point on the
+  // RMSE chart, the tau/RMSE readout, and the highlighted trajectory
+  // line -- called on every drag/keyboard step and once when the popup
+  // opens. Does NOT touch altOffsetInput -- see confirmOffsetSelection
+  // for that.
+  function applyTauSelection(tau){
+    state.selectedTau = tau;
+    el.confirmOffsetBtn.textContent = 'Set tau = ' + tau.toFixed(1) + ' s';
+
+    var entry = nearestCurveEntry(tau);
+
+    if (state.calcOffsetChart){
+      var pointDs = state.calcOffsetChart.data.datasets[1];
+      pointDs.data = (entry && entry.score !== null) ? [{x: entry.offset_s, y: entry.score}] : [];
+      state.calcOffsetChart.update('none');
+    }
+    // Readout is driven by the yellow point's own position, not by mouse
+    // hover -- see the tooltip being disabled in renderCalcOffsetChart.
+    el.tauReadout.textContent = (entry && entry.score !== null)
+      ? 'tau = ' + entry.offset_s.toFixed(1) + ' s   RMSE = ' + entry.score.toFixed(3) + ' m/s'
+      : 'tau = ' + tau.toFixed(1) + ' s   RMSE = --';
+    updateTrajHighlight(tau);
+  }
+
+  // Sets the always-visible marker for wherever the analysis judged best
+  // when the popup first opened, independent of dataset[1]'s
+  // currently-selected point. Called once per fresh curve (see
+  // openOffsetModal), never touched again while that curve is showing.
+  function markInitialBest(tau){
+    if (!state.calcOffsetChart) return;
+    var entry = nearestCurveEntry(tau);
+    var ds = state.calcOffsetChart.data.datasets[2];
+    ds.data = (entry && entry.score !== null) ? [{x: entry.offset_s, y: entry.score}] : [];
+    state.calcOffsetChart.update('none');
+  }
+
+  // The confirm button (its own label always names the exact tau it will
+  // apply): applies state.selectedTau (whatever the popup is currently
+  // previewing) to altOffsetInput and its live chart overlay, then
+  // closes the popup.
+  function confirmOffsetSelection(){
+    if (state.selectedTau === null) return;
+    el.altOffsetInput.value = state.selectedTau.toFixed(1);
+    updateAltOverlay();
+    closeOffsetModal();
+  }
+
+  // Only a strided subset of candidates is drawn as background reference
+  // lines in the trajectory chart (see renderCalcOffsetTrajChart) -- too
+  // dense otherwise. The exact currently-selected tau is instead always
+  // shown via one dedicated highlight dataset, updated in place here
+  // rather than re-rendering the whole chart on every drag step.
+  function updateTrajHighlight(tau){
+    var chart = state.calcOffsetTrajChart;
+    var trajs = state.offsetTrajectories;
+    var distanceKm = state.offsetTrajDistanceKm;
+    if (!chart || !trajs.length) return;
+
+    var best = null, bestDiff = Infinity;
+    for (var i = 0; i < trajs.length; i++){
+      var diff = Math.abs(trajs[i].offset_s - tau);
+      if (diff < bestDiff){ bestDiff = diff; best = trajs[i]; }
+    }
+    if (!best) return;
+
+    var ds = chart.data.datasets[state.trajHighlightDatasetIdx];
+    ds.data = distanceKm
+      .map(function(d, j){ return { x: d, y: best.sim_speed_ms[j] }; })
+      .filter(function(pt){ return pt.y !== null; })
+      .map(function(pt){ return { x: pt.x, y: pt.y * 3.6 }; });
+    chart.update('none');
+  }
+
+  // Shared blue(low tau)->red(high tau) color scale, used both for the
+  // score curve's per-segment gradient and the trajectory chart's
+  // per-candidate lines, so the same tau reads as the same color in
+  // both charts.
+  function colorForOffset(offsetS, oMin, oMax){
+    var frac = (oMax > oMin) ? (offsetS - oMin) / (oMax - oMin) : 0;
+    var hue = 220 - 220 * frac;
+    return 'hsl(' + hue.toFixed(0) + ',70%,55%)';
+  }
+
+  // Dataset 0 is the score curve itself; dataset 1 is a single,
+  // separately-styled point marking whichever tau the slider currently
+  // has selected (see applyTauSelection); dataset 2 is a static ring
+  // marking wherever the analysis judged best when the popup opened (see
+  // markInitialBest), left in place regardless of where dataset 1 moves.
+  // Doing these as extra datasets avoids depending on a Chart.js
+  // annotation plugin that isn't loaded here.
+  function renderCalcOffsetChart(curve){
+    if (state.calcOffsetChart){ state.calcOffsetChart.destroy(); }
+
+    var data = curve
+      .filter(function(c){ return c.score !== null; })
+      .map(function(c){ return { x: c.offset_s, y: c.score }; });
+    var oMin = Math.min.apply(null, data.map(function(p){ return p.x; }));
+    var oMax = Math.max.apply(null, data.map(function(p){ return p.x; }));
+
+    state.calcOffsetChart = new Chart(el.calcOffsetChart.getContext('2d'), {
+      type: 'line',
+      data: {
+        datasets: [
+          {
+            data: data,
+            // Same blue->red scale as the trajectory chart's per-candidate
+            // lines, colored per-segment so this curve visually matches
+            // "which tau is which color" there too.
+            segment: {
+              borderColor: function(ctx){
+                return colorForOffset((ctx.p0.parsed.x + ctx.p1.parsed.x) / 2, oMin, oMax);
+              }
+            },
+            borderWidth: 2,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+            tension: 0.1,
+            fill: false
+          },
+          {
+            // Always-visible marker for the currently-selected tau -- not
+            // meant to be hovered/clicked itself, so pointHitRadius:0 keeps
+            // it out of the way of dataset 0's own hover circle above.
+            data: [],
+            showLine: false,
+            pointRadius: 5,
+            pointHoverRadius: 5,
+            pointHitRadius: 0,
+            backgroundColor: '#ff9a4d',
+            borderColor: '#12161d',
+            borderWidth: 1.5
+          },
+          {
+            // Static hollow ring at the analysis's initial best tau (see
+            // markInitialBest) -- same hue as dataset 1's solid dot so it
+            // visually reads as "where that dot started". Transparent
+            // fill (and drawn last, i.e. on top) so it stays visible as
+            // an outline even while it coincides with the solid dot.
+            data: [],
+            showLine: false,
+            pointRadius: 8,
+            pointHoverRadius: 8,
+            pointHitRadius: 0,
+            pointStyle: 'circle',
+            backgroundColor: 'rgba(0,0,0,0)',
+            borderColor: '#ff9a4d',
+            borderWidth: 2,
+            borderDash: [2, 2]
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        parsing: false,
+        normalized: true,
+        interaction: { mode: 'nearest', intersect: false },
+        scales: {
+          x: {
+            type: 'linear',
+            title: { display: true, text: 'Offset tau (s)', color:'#7c8899', font:{size:10} },
+            ticks: { color:'#7c8899', font:{size:9} },
+            grid: { color:'#1c2430' }
+          },
+          y: {
+            title: { display: true, text: 'Speed RMSE (m/s) -- lower is better', color:'#7c8899', font:{size:10} },
+            ticks: { color:'#7c8899', font:{size:9} },
+            grid: { color:'#1c2430' }
+          }
+        },
+        plugins: {
+          legend: { display:false },
+          // No mouse-hover tooltip here on purpose: tau/r are shown via
+          // el.tauReadout instead, driven by the selected point (dataset
+          // 1 / applyTauSelection) rather than wherever the mouse
+          // happens to be hovering.
+          tooltip: { enabled: false }
+        }
+      }
+    });
+  }
+
+  // Click-or-drag directly on the score chart to pick tau. Plain pointer
+  // events rather than a Chart.js onClick handler: Chart.js only fires
+  // that on a full click, not while the pointer is held down and moved,
+  // and dragging to scrub through candidates is the interaction wanted
+  // here.
+  function initTauDrag(){
+    var dragging = false;
+    function tauFromEvent(e){
+      var chart = state.calcOffsetChart;
+      if (!chart) return null;
+      var rect = el.calcOffsetChart.getBoundingClientRect();
+      var clientX = (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX;
+      var tau = chart.scales.x.getValueForPixel(clientX - rect.left);
+      if (tau == null || !isFinite(tau)) return null;
+      return Math.max(0, Math.min(15, Math.round(tau / 0.5) * 0.5));
+    }
+    el.calcOffsetChart.addEventListener('pointerdown', function(e){
+      dragging = true;
+      el.calcOffsetChart.focus();
+      var tau = tauFromEvent(e);
+      if (tau !== null) applyTauSelection(tau);
+    });
+    window.addEventListener('pointermove', function(e){
+      if (!dragging) return;
+      var tau = tauFromEvent(e);
+      if (tau !== null) applyTauSelection(tau);
+    });
+    window.addEventListener('pointerup', function(){ dragging = false; });
+
+    // Left/right arrow keys nudge the selected tau by one candidate step
+    // (0.5s, same resolution as the drag-to-pick rounding above and the
+    // full search resolution) -- Shift widens the step to 2.0s to match
+    // the trajectory chart's reference-line stride (TRAJ_DISPLAY_STRIDE_S)
+    // for faster scrubbing across the full range.
+    el.calcOffsetChart.addEventListener('keydown', function(e){
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      e.preventDefault();
+      var step = e.shiftKey ? 2.0 : 0.5;
+      var delta = (e.key === 'ArrowLeft') ? -step : step;
+      var base = (state.selectedTau !== null) ? state.selectedTau : 0;
+      var tau = Math.max(0, Math.min(15, Math.round((base + delta) / 0.5) * 0.5));
+      applyTauSelection(tau);
+    });
+  }
+
+  // Only show a background reference line every ~2s of tau -- one per
+  // 0.5s candidate (the full search resolution) was too dense to read.
+  // The exact currently-selected tau is always shown regardless, via a
+  // separate highlight dataset (see updateTrajHighlight).
+  var TRAJ_DISPLAY_STRIDE_S = 2.0;
+
+  // Overlays simulated-speed curves for a subset of candidate offsets
+  // (color graded blue->red as tau increases, same scale as the score
+  // chart's curve) against the recorded speed (bright, thick reference
+  // line) -- a direct visual check of *why* a given tau did or didn't
+  // win, since the score-curve number alone doesn't show shape/phase
+  // mismatches. This IS the same speed domain calc_altitude_offset_
+  // autofit actually scores candidates in (unlike the plain
+  // calc_altitude_offset's acceleration-domain correlation) -- see the
+  // modal's own .chart-caption above, which names the domain actually
+  // scored. Initial highlight styling here is provisional -- the caller
+  // (calcOffsetPhysics) always follows this with applyTauSelection,
+  // which calls updateTrajHighlight to populate the highlight dataset
+  // for the actually-selected tau.
+  function renderCalcOffsetTrajChart(trajectories, distanceM, recordedSpeed){
+    if (state.calcOffsetTrajChart){ state.calcOffsetTrajChart.destroy(); }
+    if (!trajectories || !trajectories.length) return;
+
+    state.offsetTrajDistanceKm = distanceM.map(function(d){ return d / 1000; });
+
+    var offsets = trajectories.map(function(t){ return t.offset_s; });
+    var oMin = Math.min.apply(null, offsets), oMax = Math.max.apply(null, offsets);
+
+    var lastShown = null;
+    var displayed = trajectories.filter(function(t){
+      if (lastShown === null || t.offset_s - lastShown >= TRAJ_DISPLAY_STRIDE_S - 1e-9){
+        lastShown = t.offset_s;
+        return true;
+      }
+      return false;
+    });
+
+    renderTrajLegend(displayed, oMin, oMax);
+
+    var datasets = displayed.map(function(t){
+      return {
+        data: state.offsetTrajDistanceKm
+          .map(function(d, j){ return { x: d, y: t.sim_speed_ms[j] }; })
+          .filter(function(pt){ return pt.y !== null; })
+          .map(function(pt){ return { x: pt.x, y: pt.y * 3.6 }; }),
+        borderColor: colorForOffset(t.offset_s, oMin, oMax),
+        borderWidth: 1.0,
+        pointRadius: 0,
+        pointHoverRadius: 0,
+        tension: 0.15,
+        fill: false,
+        order: 1
+      };
+    });
+
+    // Highlight dataset: the exact currently-selected tau, always shown
+    // even when it falls between two displayed background lines above.
+    datasets.push({
+      data: [],
+      borderColor: '#ff9a4d',
+      borderWidth: 2.6,
+      pointRadius: 0,
+      pointHoverRadius: 0,
+      tension: 0.15,
+      fill: false,
+      order: 0
+    });
+    state.trajHighlightDatasetIdx = datasets.length - 1;
+
+    // Recorded speed drawn last (on top), bright white so it stays
+    // prominent against the colored candidate lines.
+    datasets.push({
+      data: state.offsetTrajDistanceKm.map(function(d, i){ return { x: d, y: recordedSpeed[i] * 3.6 }; }),
+      borderColor: '#f5f7fa',
+      borderWidth: 2.6,
+      pointRadius: 0,
+      pointHoverRadius: 0,
+      tension: 0.15,
+      fill: false,
+      order: -1
+    });
+
+    state.calcOffsetTrajChart = new Chart(el.calcOffsetTrajChart.getContext('2d'), {
+      type: 'line',
+      data: { datasets: datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        parsing: false,
+        normalized: true,
+        interaction: { mode: 'nearest', intersect: false },
+        scales: {
+          x: {
+            type: 'linear',
+            title: { display: true, text: 'Distance (km)', color:'#7c8899', font:{size:10} },
+            ticks: { color:'#7c8899', font:{size:9} },
+            grid: { color:'#1c2430' }
+          },
+          y: {
+            title: { display: true, text: 'Speed (km/h)', color:'#7c8899', font:{size:10} },
+            ticks: { color:'#7c8899', font:{size:9} },
+            grid: { color:'#1c2430' }
+          }
+        },
+        plugins: {
+          legend: { display:false },
+          tooltip: { enabled:false }
+        }
+      }
+    });
+  }
+
+  // Custom HTML legend rather than Chart.js's built-in one -- it needs to
+  // be draggable, which Chart.js's own canvas-rendered legend doesn't
+  // support. "Recorded" first (it's the reference line), then each
+  // displayed candidate in tau order, using the same color scale as the
+  // lines themselves so the mapping is unambiguous.
+  function renderTrajLegend(displayed, oMin, oMax){
+    var rows = ['<div class="item"><span class="swatch" style="background:#f5f7fa"></span>Recorded</div>'];
+    displayed.forEach(function(t){
+      rows.push(
+        '<div class="item"><span class="swatch" style="background:' + colorForOffset(t.offset_s, oMin, oMax) + '"></span>'
+        + 'Simulated with tau=' + t.offset_s.toFixed(1) + 's</div>'
+      );
+    });
+    el.trajLegend.innerHTML = rows.join('');
+    if (state.trajLegendPos){
+      el.trajLegend.style.left = state.trajLegendPos.left + 'px';
+      el.trajLegend.style.top = state.trajLegendPos.top + 'px';
+      el.trajLegend.style.right = 'auto';
+    }
+  }
+
+  // Drag-to-reposition for the trajectory chart's legend. Wired once (the
+  // element itself persists across renderCalcOffsetTrajChart calls --
+  // only its content is rebuilt each time), position clamped to stay
+  // within the chart block and remembered in state.trajLegendPos so it
+  // survives the next analysis run's re-render.
+  function initTrajLegendDrag(){
+    var dragging = false, offsetX = 0, offsetY = 0;
+    el.trajLegend.addEventListener('pointerdown', function(e){
+      dragging = true;
+      var rect = el.trajLegend.getBoundingClientRect();
+      offsetX = e.clientX - rect.left;
+      offsetY = e.clientY - rect.top;
+      e.preventDefault();
+    });
+    window.addEventListener('pointermove', function(e){
+      if (!dragging) return;
+      var parent = el.trajLegend.parentElement;
+      var parentRect = parent.getBoundingClientRect();
+      var left = e.clientX - parentRect.left - offsetX;
+      var top = e.clientY - parentRect.top - offsetY;
+      left = Math.max(0, Math.min(parentRect.width - el.trajLegend.offsetWidth, left));
+      top = Math.max(0, Math.min(parentRect.height - el.trajLegend.offsetHeight, top));
+      el.trajLegend.style.left = left + 'px';
+      el.trajLegend.style.top = top + 'px';
+      el.trajLegend.style.right = 'auto';
+      state.trajLegendPos = {left: left, top: top};
+    });
+    window.addEventListener('pointerup', function(){ dragging = false; });
+  }
+
+  // ---------- slider ----------
+  function initSlider(){
+    el.handleStart.addEventListener('pointerdown', function(e){ startDrag('start', e); });
+    el.handleEnd.addEventListener('pointerdown', function(e){ startDrag('end', e); });
+    window.addEventListener('pointermove', onDrag);
+    window.addEventListener('pointerup', endDrag);
+
+    el.handleStart.addEventListener('keydown', function(e){ onHandleKey('start', e); });
+    el.handleEnd.addEventListener('keydown', function(e){ onHandleKey('end', e); });
+  }
+
+  function onHandleKey(which, e){
+    var step = e.shiftKey ? 10 : 1;
+    if (e.key === 'ArrowLeft'){ nudge(which, -step); e.preventDefault(); }
+    else if (e.key === 'ArrowRight'){ nudge(which, step); e.preventDefault(); }
+  }
+  function nudge(which, delta){
+    if (which === 'start'){
+      state.startIdx = clamp(state.startIdx + delta, 0, state.endIdx - 1);
+    } else {
+      state.endIdx = clamp(state.endIdx + delta, state.startIdx + 1, state.pts.length - 1);
+    }
+    updateAll();
+  }
+  function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+
+  function startDrag(which, e){
+    state.dragging = which;
+    e.target.focus();
+    e.preventDefault();
+  }
+  function endDrag(){ state.dragging = null; }
+
+  function onDrag(e){
+    if (!state.dragging) return;
+    var rect = el.sliderTrack.getBoundingClientRect();
+    var px = clamp(e.clientX, rect.left, rect.right);
+    var idx = pixelToIndex(px);
+    if (state.dragging === 'start'){
+      state.startIdx = clamp(idx, 0, state.endIdx - 1);
+    } else {
+      state.endIdx = clamp(idx, state.startIdx + 1, state.pts.length - 1);
+    }
+    updateAll();
+  }
+
+  function pixelToIndex(px){
+    var xScale = state.chart.scales.x;
+    var value = xScale.getValueForPixel(px);
+    // binary search nearest index by elapsed value
+    var pts = state.pts;
+    var lo = 0, hi = pts.length - 1;
+    while (lo < hi){
+      var mid = (lo+hi)>>1;
+      if (pts[mid].elapsed < value) lo = mid+1; else hi = mid;
+    }
+    if (lo > 0 && Math.abs(pts[lo-1].elapsed - value) < Math.abs(pts[lo].elapsed - value)) lo -= 1;
+    return lo;
+  }
+
+  function indexToPixel(idx){
+    var xScale = state.chart.scales.x;
+    return xScale.getPixelForValue(state.pts[idx].elapsed);
+  }
+
+  function positionHandles(){
+    if (!state.chart || !state.pts.length) return;
+    var wrapRect = el.chartWrap.getBoundingClientRect();
+    var canvasRect = el.speedChart.getBoundingClientRect();
+    var offsetLeft = canvasRect.left - wrapRect.left;
+
+    var xs = indexToPixel(state.startIdx) + offsetLeft;
+    var xe = indexToPixel(state.endIdx) + offsetLeft;
+
+    el.handleStart.style.left = xs + 'px';
+    el.handleEnd.style.left = xe + 'px';
+    el.selectionBand.style.left = Math.min(xs,xe) + 'px';
+    el.selectionBand.style.width = Math.abs(xe-xs) + 'px';
+  }
+
+  // ---------- update / render ----------
+  function updateAll(){
+    var pts = state.pts;
+    var s = pts[state.startIdx];
+    var e = pts[state.endIdx];
+
+    // readouts
+    el.s_idx.textContent = state.startIdx;
+    el.s_time.textContent = fmtTime(s.elapsed);
+    el.s_dist.textContent = fmtDist(s.dist/1000);
+    el.s_spd.textContent = fmtSpd(s.spd*3.6);
+    el.s_latlon.textContent = fmtLatLon(s.lat, s.lon);
+
+    el.e_idx.textContent = state.endIdx;
+    el.e_time.textContent = fmtTime(e.elapsed);
+    el.e_dist.textContent = fmtDist(e.dist/1000);
+    el.e_spd.textContent = fmtSpd(e.spd*3.6);
+    el.e_latlon.textContent = fmtLatLon(e.lat, e.lon);
+
+    var durSec = e.elapsed - s.elapsed;
+    var distKm = (e.dist - s.dist)/1000;
+    el.sum_time.textContent = state.hasTime ? fmtTime(durSec) : '(no timestamp data)';
+    el.sum_dist.textContent = fmtDist(distKm);
+    el.sum_spd.textContent = (state.hasTime && durSec > 0) ? fmtSpd(distKm/(durSec/3600)) : '-';
+    el.sum_pts.textContent = (state.endIdx - state.startIdx + 1);
+
+    // map
+    var seg = pts.slice(state.startIdx, state.endIdx+1).map(function(p){ return [p.lat,p.lon]; });
+    state.selLine.setLatLngs(seg);
+    state.startMarker.setLatLng([s.lat, s.lon]);
+    state.endMarker.setLatLng([e.lat, e.lon]);
+
+    positionHandles();
+  }
+
+  window.addEventListener('resize', function(){ positionHandles(); });
+
+  // ---------- altitude overlay (manual visual alignment aid) ----------
+  el.altOffsetInput.addEventListener('input', updateAltOverlay);
+
+  // ---------- physics-based offset auto-calc ----------
+  el.calcOffsetBtn.addEventListener('click', calcOffsetPhysics);
+  initTauDrag();
+  initTrajLegendDrag();
+  el.offsetModalClose.addEventListener('click', closeOffsetModal);
+  el.confirmOffsetBtn.addEventListener('click', confirmOffsetSelection);
+  el.offsetAnalysisModal.addEventListener('click', function(e){
+    if (e.target === el.offsetAnalysisModal) closeOffsetModal();
+  });
+  window.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && el.offsetAnalysisModal.classList.contains('visible')) closeOffsetModal();
+  });
+
+  // ---------- export ----------
+  el.exportBtn.addEventListener('click', function(){
+    if (!state.pts.length) return;
+    var pts = state.pts.slice(state.startIdx, state.endIdx+1);
+    var altOffset = parseFloat(el.altOffsetInput.value);
+    if (!isFinite(altOffset)) altOffset = 0;
+    var lines = [];
+    lines.push('<?xml version="1.0" encoding="UTF-8"?>');
+    lines.push('<gpx version="1.1" creator="FIT-GPX-Trimmer" xmlns="http://www.topografix.com/GPX/1/1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">');
+    lines.push('  <trk><name>'+escapeXml(state.fileBase)+'</name><trkseg>');
+    for (var i=0;i<pts.length;i++){
+      var p = pts[i];
+      var attrs = 'lat="'+p.lat.toFixed(7)+'" lon="'+p.lon.toFixed(7)+'"';
+      var inner = '';
+      // Altitude is looked up at (elapsed + altOffset) against the full
+      // point series: a positive offset pulls in the altitude value that
+      // was originally recorded altOffset seconds LATER, i.e. it shifts
+      // the altitude trace earlier in time relative to speed/position.
+      var eleOut = (altOffset !== 0) ? eleAtElapsed(p.elapsed + altOffset) : p.ele;
+      if (eleOut !== null) inner += '<ele>'+eleOut.toFixed(1)+'</ele>';
+      // Deliberately NOT writing <time> here: this project's own GPX
+      // consumer (core.data_manager._parse_gpx_to_ndarray) only ever
+      // reads lat/lon/ele -- <time> is pure extra fidelity for other GPX
+      // tools, but a per-point wall-clock timestamp on every trkpt
+      // directly exposes exactly when (and, combined with position,
+      // where) the rider who recorded this FIT file was riding. A course
+      // file meant to be shared (e.g. for others racing the same route)
+      // has no reason to carry the original recorder's own ride
+      // date/time along with it.
+      lines.push('    <trkpt '+attrs+'>'+inner+'</trkpt>');
+    }
+    lines.push('  </trkseg></trk>');
+    lines.push('</gpx>');
+    var xml = lines.join('\n');
+    var fname = (el.filenameInput.value || 'trim.gpx').trim();
+    if (!/\.gpx$/i.test(fname)) fname += '.gpx';
+
+    // Writes the file directly next to the input FIT via
+    // hyle.apps.fit2gpx_converter's local server (a plain client-side
+    // download has no way to target that directory; see that module's
+    // own docstring for why). &offset=<altOffset> lets the server
+    // remember this offset (core.io_config.save_power_offset_s) so the
+    // NEXT session here or in eidos.apps.analyzer starts from it -- see
+    // this file's own power_offset_s note above and the /save handler
+    // in hyle.apps.fit2gpx_converter.
+    fetch('/save?filename=' + encodeURIComponent(fname) + '&offset=' + encodeURIComponent(altOffset), {
+      method: 'POST',
+      headers: {'Content-Type': 'application/gpx+xml'},
+      body: xml
+    }).then(function(r){
+      if (!r.ok) throw new Error('save failed (' + r.status + ')');
+      return r.json();
+    }).then(function(data){
+      var offsetNote = (altOffset !== 0) ? ('(altitude shifted ' + altOffset + 's earlier)') : '';
+      el.exportHint.textContent = 'Wrote ' + pts.length + ' points' + offsetNote + ' -> ' + data.path;
+    }).catch(function(err){
+      el.exportHint.textContent = 'Save error: ' + (err && err.message ? err.message : err);
+    });
+  });
+
+  // ---------- load FIT, already parsed server-side by hyle.apps.fit2gpx_converter ----------
+  fetch('/parsed.json').then(function(r){
+    if (!r.ok) throw new Error('no local server');
+    return r.json();
+  }).then(function(data){
+    if (!data.ok){
+      showError(data.error || 'failed to parse FIT file');
+      return;
+    }
+    state.fileBase = data.filename.replace(/\.fit$/i, '');
+    buildPoints(data);
+  }).catch(function(){
+    // This page only works when launched via hyle.apps.fit2gpx_converter's
+    // local server, which parses the FIT file and receives the saved GPX.
+    // Opening the HTML file directly has nothing to load and nowhere to
+    // save to.
+    document.getElementById('loadStatusText').textContent =
+      'Please open this via the hyle-fit2gpx-converter command (opening the HTML file directly will not work)';
+  });
+
+})();
+
+</script>
+</body>
+</html>
