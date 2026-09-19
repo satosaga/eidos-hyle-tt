@@ -5,7 +5,7 @@
 - **Numerator — EIDOS^TT**: Exact Intelligent Design Of Strategy for Time Trials
 - **Denominator — HYLE^TT**: High-fidelity Yield of Logistics for EIDOS^TT
 
-<img width="3440" height="1440" alt="hero_blurred" src="https://github.com/user-attachments/assets/bb41b1af-b642-4870-aba3-9aa9899e881f" />
+<img width="3440" height="1440" alt="hero_blurred" src="docs/assets/hero.png" />
 
 EIDOS^TT is a **workbench that takes a cycling time-trial pacing strategy from generation through race-day analysis**, built around a physics-based optimizer that searches for the fastest feasible strategy — plus a small set of supporting logistics tools (HYLE^TT).
 
