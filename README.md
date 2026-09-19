@@ -5,7 +5,7 @@
 - **Numerator — EIDOS^TT**: Exact Intelligent Design Of Strategy for Time Trials
 - **Denominator — HYLE^TT**: High-fidelity Yield of Logistics for EIDOS^TT
 
-<img width="3440" height="1440" alt="hero_blurred" src="https://github.com/user-attachments/assets/f4133839-b055-44d0-b0ee-b09e351be48b" />
+<img width="3440" height="1440" alt="hero_blurred" src="https://github.com/user-attachments/assets/bb41b1af-b642-4870-aba3-9aa9899e881f" />
 
 EIDOS^TT is a **workbench that takes a cycling time-trial pacing strategy from generation through race-day analysis**, built around a physics-based optimizer that searches for the fastest feasible strategy — plus a small set of supporting logistics tools (HYLE^TT).
 
@@ -72,25 +72,25 @@ The spiral is not just conceptual — each app reads from and writes to specific
 
 ### 1. Generate
 
-https://github.com/user-attachments/assets/57409eb0-56b5-4547-9624-7d19d86c705d
+https://github.com/user-attachments/assets/dc5e1aa1-f1c1-4d5c-8e30-9167f3fb3bd8
 
 Load a GPX course file and rider parameters. Run multi-start differential evolution across a range of segment counts. All candidate strategies are saved as compressed JSON files with a Parquet index.
 
 ### 2. View
 
-https://github.com/user-attachments/assets/f24336c0-6f63-40f0-8ef8-76213b737b95
+https://github.com/user-attachments/assets/98941452-a3be-4c1e-8821-7f2f37fac888
 
 Inspect all candidate strategies in the Viewer, narrowed to the ones worth comparing by reusable filter criteria (edited in the Manager). Overlay and compare across seeds and segment counts. Assess convergence quality visually and select one strategy to carry forward.
 
 ### 3. Design
 
-https://github.com/user-attachments/assets/d2510389-1314-4f53-be96-2f8a7702cda3
+https://github.com/user-attachments/assets/71997964-17a8-4dfd-8df8-2ea0e52d34f0
 
 Open the selected strategy in the Designer for manual refinement. Segment powers and lengths can be edited interactively while the simulator recalculates performance in real time, and saving writes the edited version as a new strategy record alongside the original, rather than overwriting it.
 
 ### 4. Export
 
-https://github.com/user-attachments/assets/a8ca5b50-5518-499c-82bd-deaca3ec8a81
+https://github.com/user-attachments/assets/f090648b-95e4-4051-a7da-24cd98ea4c90
 
 Export the finalized strategy as:
 
@@ -101,7 +101,7 @@ Export the finalized strategy as:
 
 ### 5. Execute
 
-https://github.com/user-attachments/assets/94c2928b-2982-411c-bb8f-cecbbffaf2fb
+https://github.com/user-attachments/assets/62e99249-2cfc-44ba-8226-3acc83a5fbbe
 
 Internalize the strategy through repeated execution — in a simulator, on the road, or during the race itself.
 
@@ -117,7 +117,7 @@ Whichever method is used, the resulting ride is saved as a FIT file in `activiti
 
 ### 6. Analyze
 
-https://github.com/user-attachments/assets/237d8fdc-4709-4252-aac1-a29a72eb204a
+https://github.com/user-attachments/assets/ece06f45-db8a-4397-b53e-a9022a6fbfe4
 
 After a real race or practice ride, use the **Analyzer** to match the recorded FIT file to the course (if it doesn't match, see `docs/RUNBOOK.md`'s "Analyzer fails to match a recorded FIT file to its course" entry) and overlay it against the planned strategy. Its core use is a Rebuild-and-compare workbench: re-simulate using the actual course geometry, recorded power, or hand-adjusted physics parameters, and compare the result against both the plan and the real ride — repeating with different manual values to work out what actually explains the gap. See [`docs/ANALYZER_COMPARISON.md`](docs/ANALYZER_COMPARISON.md) for how the Activity, Strategy, and Rebuild lines are actually lined up against each other.
 
