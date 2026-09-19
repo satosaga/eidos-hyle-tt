@@ -202,4 +202,6 @@ Sato SAGA ([ORCID: 0000-0002-4484-1464](https://orcid.org/0000-0002-4484-1464))
 
 ## License
 
+Copyright (C) 2026 Sato SAGA
+
 GNU General Public License v3.0 or later — see [LICENSE](LICENSE) for details.
