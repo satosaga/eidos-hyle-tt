@@ -5,6 +5,8 @@
 - **Numerator — EIDOS^TT**: Exact Intelligent Design Of Strategy for Time Trials
 - **Denominator — HYLE^TT**: High-fidelity Yield of Logistics for EIDOS^TT
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22852682.svg)](https://doi.org/10.5281/zenodo.22852682)
+
 <img width="3440" height="1440" alt="hero_blurred" src="docs/assets/hero.png" />
 
 EIDOS^TT is a **workbench that takes a cycling time-trial pacing strategy from generation through race-day analysis**, built around a physics-based optimizer that searches for the fastest feasible strategy — plus a small set of supporting logistics tools (HYLE^TT).
@@ -191,6 +193,19 @@ Morton, R.H. (1996). A 3-parameter critical power model. *Ergonomics*, 39(4), 61
 ## Acknowledgments
 
 Multiple LLMs (Claude, Gemini, ChatGPT, Grok) were used as coding and documentation aids.
+
+---
+
+## Citation
+
+If you use this software in published work, please cite it. Machine-readable
+metadata lives in [CITATION.cff](CITATION.cff) — GitHub's "Cite this
+repository" button generates APA and BibTeX from it.
+
+- **Concept DOI** — always resolves to the latest version: [10.5281/zenodo.22852682](https://doi.org/10.5281/zenodo.22852682)
+- **v0.1.0**: [10.5281/zenodo.22852683](https://doi.org/10.5281/zenodo.22852683)
+
+Cite the concept DOI unless your work depends on a specific release.
 
 ---
 
